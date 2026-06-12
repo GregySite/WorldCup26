@@ -1,94 +1,27 @@
-// Vercel Serverless Function
-// Proxies football-data.org — hides API key, adds CORS headers
-// Free plan: 10 req/min, no daily limit — perfect for 30s refresh
+// Vercel Serverless Function — World Cup 2026 v2
+// football-data.org free plan: 10 req/min, no daily limit
 
-const API_KEY = process.env.FOOTBALLDATA_KEY;
-const BASE    = 'https://api.football-data.org/v4';
+const KEY  = process.env.FOOTBALLDATA_KEY;
+const BASE = 'https://api.football-data.org/v4';
 
-// football-data.org team name → our internal names
 const TEAM_MAP = {
-  'Korea Republic':           'South Korea',
-  'Czechia':                  'Czech Republic',
-  'Bosnia and Herzegovina':   'Bosnia-Herzegovina',
-  'United States':            'USA',
-  'Türkiye':                  'Turkey',
-  "Côte d'Ivoire":            'Ivory Coast',
-  'IR Iran':                  'Iran',
-  'Cabo Verde':               'Cape Verde',
-  'Congo DR':                 'DR Congo',
-  'Democratic Republic of Congo': 'DR Congo',
+  'Korea Republic':'South Korea','Czechia':'Czech Republic',
+  'Bosnia and Herzegovina':'Bosnia-Herzegovina',
+  'United States':'USA','Türkiye':'Turkey',
+  "Côte d'Ivoire":'Ivory Coast',"Cote d'Ivoire":'Ivory Coast',
+  'IR Iran':'Iran','Cabo Verde':'Cape Verde',
+  'Congo DR':'DR Congo','Democratic Republic of Congo':'DR Congo',
 };
-function mapTeam(n) { return TEAM_MAP[n] || n; }
+const mapT = n => TEAM_MAP[n] || n;
 
-async function apiFetch(path) {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'X-Auth-Token': API_KEY },
-  });
-  if (!res.ok) throw new Error(`football-data.org ${res.status}`);
-  return res.json();
+async function get(path) {
+  const r = await fetch(`${BASE}${path}`, { headers:{'X-Auth-Token':KEY} });
+  if (!r.ok) throw new Error(`football-data ${r.status} ${path}`);
+  return r.json();
 }
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
-  // Cache 25s on Vercel edge — safe for 30s client refresh
-  res.setHeader('Cache-Control', 's-maxage=25, stale-while-revalidate=30');
-
-  if (!API_KEY) {
-    return res.status(500).json({ error: 'FOOTBALLDATA_KEY not set' });
-  }
-
-  try {
-    const scores  = {};
-    const liveIds = [];
-    const minutes = {};
-
-    // Single call gets everything: live + finished
-    // status=LIVE,FINISHED avoids needing two separate requests
-    const data = await apiFetch('/competitions/WC/matches?status=LIVE,FINISHED,IN_PLAY,PAUSED');
-
-    for (const match of data.matches || []) {
-      const ft   = match.score?.fullTime;
-      const live = ['IN_PLAY', 'PAUSED', 'HALFTIME'].includes(match.status);
-      const done = match.status === 'FINISHED';
-
-      // For live: use current score (score.fullTime during play = current score)
-      const scoreData = live ? (match.score?.fullTime ?? match.score?.halfTime) : ft;
-      if (!scoreData || scoreData.home == null) continue;
-
-      const home = mapTeam(match.homeTeam.name);
-      const away = mapTeam(match.awayTeam.name);
-      const mid  = findMatchId(home, away);
-      if (!mid) continue;
-
-      scores[mid.id] = mid.homeIsFirst
-        ? [scoreData.home, scoreData.away]
-        : [scoreData.away, scoreData.home];
-
-      if (live) {
-        liveIds.push(mid.id);
-        // minute: handle extra time (e.g. 90+3 → store as 93)
-        const m = match.minute;
-        const extra = match.injuryTime || 0;
-        if (m != null) minutes[mid.id] = m + (extra || 0);
-      }
-    }
-
-    return res.status(200).json({
-      updated: new Date().toISOString(),
-      matches: scores,
-      live:    liveIds,
-      minutes,
-    });
-
-  } catch (e) {
-    console.error(e);
-    return res.status(502).json({ error: e.message });
-  }
-}
-
-// ── Match ID lookup (group-localIndex, mirrors frontend) ──
-const MATCH_LOOKUP = (() => {
+// Match lookup: "Home|||Away" → {id, homeIsFirst}
+const LOOKUP = (() => {
   const raw = [
     ['A','Mexico','South Africa'],        ['A','South Korea','Czech Republic'],
     ['B','Canada','Bosnia-Herzegovina'],  ['B','Switzerland','Qatar'],
@@ -127,17 +60,96 @@ const MATCH_LOOKUP = (() => {
     ['K','DR Congo','Colombia'],          ['K','Portugal','Uzbekistan'],
     ['L','Croatia','Panama'],             ['L','England','Ghana'],
   ];
-  const gc = {};
-  const map = {};
-  for (const [g, h, a] of raw) {
-    gc[g] = (gc[g] || 0);
-    const id = `${g}-${gc[g]++}`;
-    map[`${h}|||${a}`] = { id, homeIsFirst: true  };
-    map[`${a}|||${h}`] = { id, homeIsFirst: false };
+  const gc={}, map={};
+  for (const [g,h,a] of raw) {
+    gc[g]=(gc[g]||0);
+    const id=`${g}-${gc[g]++}`;
+    map[`${h}|||${a}`]={id,homeIsFirst:true};
+    map[`${a}|||${h}`]={id,homeIsFirst:false};
   }
   return map;
 })();
 
-function findMatchId(home, away) {
-  return MATCH_LOOKUP[`${home}|||${away}`] || null;
+function findMatch(home,away){ return LOOKUP[`${home}|||${away}`]||null; }
+
+function processMatch(match, scores, liveIds, minutes, goals, cards) {
+  const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(match.status);
+  const isDone = match.status === 'FINISHED';
+  if (!isLive && !isDone) return;
+
+  const scoreData = isLive ? match.score?.fullTime : match.score?.fullTime;
+  if (!scoreData || scoreData.home == null) return;
+
+  const home = mapT(match.homeTeam.name);
+  const away = mapT(match.awayTeam.name);
+  const fm = findMatch(home, away);
+  if (!fm) return;
+
+  scores[fm.id] = fm.homeIsFirst
+    ? [scoreData.home, scoreData.away]
+    : [scoreData.away, scoreData.home];
+
+  if (isLive) {
+    liveIds.push(fm.id);
+    const mn = match.minute;
+    if (mn != null) minutes[fm.id] = mn + (match.injuryTime||0);
+  }
+
+  // Goals (scorers per match)
+  if (match.goals?.length) {
+    goals[fm.id] = match.goals.map(g => ({
+      min:   g.minute,
+      name:  g.scorer?.name || '?',
+      team:  mapT(g.team?.name || ''),
+      type:  g.type, // REGULAR, OWN_GOAL, PENALTY
+    }));
+  }
+
+  // Cards
+  if (match.bookings?.length) {
+    cards[fm.id] = match.bookings.map(b => ({
+      min:  b.minute,
+      name: b.player?.name || '?',
+      team: mapT(b.team?.name || ''),
+      card: b.card, // YELLOW_CARD, RED_CARD, YELLOW_RED_CARD
+    }));
+  }
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 's-maxage=25, stale-while-revalidate=30');
+  if (!KEY) return res.status(500).json({ error: 'FOOTBALLDATA_KEY not set' });
+
+  try {
+    const scores={}, liveIds=[], minutes={}, goals={}, cards={};
+
+    // Call 1: live + finished matches (scores, goals, cards)
+    const matches = await get('/competitions/WC/matches?status=LIVE,IN_PLAY,PAUSED,FINISHED');
+    for (const m of matches.matches||[]) processMatch(m, scores, liveIds, minutes, goals, cards);
+
+    // Call 2: top scorers
+    const scorersData = await get('/competitions/WC/scorers?limit=20');
+    const scorers = (scorersData.scorers||[]).map(s => ({
+      name:   s.player?.name || '?',
+      team:   mapT(s.team?.name || ''),
+      goals:  s.goals ?? 0,
+      assists: s.assists ?? 0,
+      penalties: s.penalties ?? 0,
+    }));
+
+    return res.status(200).json({
+      updated: new Date().toISOString(),
+      matches: scores,
+      live:    liveIds,
+      minutes,
+      goals,
+      cards,
+      scorers,
+    });
+
+  } catch(e) {
+    console.error(e);
+    return res.status(502).json({ error: e.message });
+  }
 }
