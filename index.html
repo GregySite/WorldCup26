@@ -386,11 +386,32 @@ function RU(){
   });
   const dates=Object.keys(bd).sort((a,b)=>{const[da,ma]=a.split('/').map(Number),[db,mb]=b.split('/').map(Number);return ma!==mb?ma-mb:da-db});
   if(!dates.length){c.innerHTML='<div style="color:var(--text3);text-align:center;padding:2rem;font-size:.85rem">No matches for this filter.</div>';return}
+
+  // Find where "now" sits — between last past match and first future match
+  let nowLineEl=null;
+  let nowInserted=false;
+
   dates.forEach(date=>{
     const[d,mo]=date.split('/');
     const dh=document.createElement('div');dh.className='dd';dh.textContent=parseInt(d)+' '+MON[parseInt(mo)-1]+' 2026';c.appendChild(dh);
     bd[date].forEach(m=>{
       const g=G[m.g],s=sc(m.id),p=PRED[m.id],live=isLive(m.id);
+      const matchDate=pd(m.date,m.ph);
+
+      // Insert NOW line just before the first match that hasn't started yet
+      if(!nowInserted && !live && matchDate>now && (uf==='all'||uf==='week')){
+        const nl=document.createElement('div');
+        nl.id='now-line';
+        nl.innerHTML=`<div style="display:flex;align-items:center;gap:.6rem;margin:.5rem 0">
+          <div style="flex:1;height:2px;background:var(--red);border-radius:2px"></div>
+          <span style="font-size:.65rem;font-weight:700;color:var(--red);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;padding:2px 8px;background:rgba(255,59,48,.15);border-radius:20px;border:1px solid rgba(255,59,48,.4)">▶ Now</span>
+          <div style="flex:1;height:2px;background:var(--red);border-radius:2px"></div>
+        </div>`;
+        c.appendChild(nl);
+        nowLineEl=nl;
+        nowInserted=true;
+      }
+
       const stMap={
         done:`<span style="font-size:.6rem;background:rgba(0,200,83,.12);color:var(--green);padding:2px 5px;border-radius:3px;font-weight:700">✓ FT</span>`,
         live:`<span style="font-size:.6rem;background:rgba(255,59,48,.2);color:var(--red);padding:2px 5px;border-radius:3px;font-weight:700;animation:blink 1.2s infinite">● Live</span>`,
@@ -413,6 +434,13 @@ function RU(){
       c.appendChild(it);
     });
   });
+
+  // Auto-scroll to NOW line — leave last past match visible above it
+  if(nowLineEl){
+    setTimeout(()=>{
+      nowLineEl.scrollIntoView({behavior:'smooth',block:'center'});
+    },120);
+  }
 }
 
 // ══ KNOCKOUT ══
