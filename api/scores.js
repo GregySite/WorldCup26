@@ -41,6 +41,7 @@ export default async function handler(req, res) {
   try {
     const scores  = {};
     const liveIds = [];
+    const minutes = {};
 
     // Single call gets everything: live + finished
     // status=LIVE,FINISHED avoids needing two separate requests
@@ -64,13 +65,20 @@ export default async function handler(req, res) {
         ? [scoreData.home, scoreData.away]
         : [scoreData.away, scoreData.home];
 
-      if (live) liveIds.push(mid.id);
+      if (live) {
+        liveIds.push(mid.id);
+        // minute: handle extra time (e.g. 90+3 → store as 93)
+        const m = match.minute;
+        const extra = match.injuryTime || 0;
+        if (m != null) minutes[mid.id] = m + (extra || 0);
+      }
     }
 
     return res.status(200).json({
       updated: new Date().toISOString(),
       matches: scores,
       live:    liveIds,
+      minutes,
     });
 
   } catch (e) {
