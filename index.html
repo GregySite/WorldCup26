@@ -68,12 +68,10 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif}
 .mc{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:94px}
 .mdl{font-size:.56rem;color:var(--text3)}
 .mtl{font-size:.6rem;color:var(--gold);font-weight:600}
-.sw{display:flex;align-items:center;gap:3px;cursor:pointer;margin-top:1px}
+.sw{display:flex;align-items:center;gap:3px;margin-top:1px}
 .sb{width:26px;height:26px;border-radius:4px;background:var(--bg2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.84rem;transition:all .3s}
-.sb:hover{border-color:var(--green)}
 .sb.live{background:rgba(255,59,48,.15);border-color:var(--red);animation:score-pulse 2s infinite}
 .sb.done{background:var(--green-dim);border-color:var(--green)}
-.sb.manual{background:rgba(10,132,255,.15);border-color:var(--blue)}
 @keyframes score-pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,.4)}50%{box-shadow:0 0 0 5px rgba(255,59,48,0)}}
 .ss{font-size:.75rem;color:var(--text3)}
 .mst{font-size:.53rem;padding:1px 5px;border-radius:3px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-top:1px}
@@ -93,22 +91,6 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif}
 .bd2{background:var(--text3);height:100%}
 .ba{background:var(--blue);height:100%}
 .bl{display:flex;justify-content:space-between;font-size:.52rem;color:var(--text3);margin-top:1px;padding:0 1px}
-/* MODAL */
-.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;align-items:center;justify-content:center}
-.mo.open{display:flex}
-.md{background:var(--card2);border:1px solid var(--border2);border-radius:var(--r);padding:1.4rem;width:min(350px,92vw)}
-.md h3{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text);margin-bottom:.4rem;text-align:center}
-.mmatch{text-align:center;font-size:.8rem;color:var(--text2);margin-bottom:.4rem;font-weight:600}
-.mh{text-align:center;font-size:.65rem;color:var(--text3);margin-bottom:.9rem;line-height:1.5;padding:.4rem .6rem;background:var(--bg2);border-radius:var(--rs)}
-.sr{display:grid;grid-template-columns:1fr 20px 1fr;align-items:center;gap:.4rem;margin-bottom:.9rem}
-.si{width:100%;height:44px;border-radius:var(--rs);background:var(--bg);border:1px solid var(--border2);color:var(--text);font-size:1.3rem;font-weight:700;text-align:center;font-family:'Barlow Condensed',sans-serif;outline:none;transition:border-color .2s}
-.si:focus{border-color:var(--green)}
-.mbs{display:flex;gap:.5rem}
-.btn{flex:1;padding:.55rem;border-radius:var(--rs);font-size:.75rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;border:none;transition:opacity .15s}
-.btn:hover{opacity:.85}
-.bsv{background:var(--green);color:#000}
-.bcn{background:var(--bg);color:var(--text2);border:1px solid var(--border2)}
-.bcl{background:transparent;color:var(--red);border:1px solid rgba(255,59,48,.3);flex:0;padding:.55rem .75rem}
 /* SCHEDULE */
 .sh{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text);margin-bottom:.9rem;display:flex;align-items:center;gap:.5rem}
 .sh::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -116,8 +98,7 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif}
 .fb button{padding:.28rem .7rem;border-radius:20px;font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:var(--card);border:1px solid var(--border);color:var(--text2);transition:all .15s}
 .fb button:hover,.fb button.act{background:var(--green-dim);border-color:var(--green);color:var(--green)}
 .ul{display:flex;flex-direction:column;gap:.5rem}
-.ui{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.75rem .9rem;display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:.7rem;cursor:pointer;transition:border-color .15s}
-.ui:hover{border-color:var(--border2)}
+.ui{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:.75rem .9rem;display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:.7rem;transition:border-color .15s}
 .ui.islive{border-color:rgba(255,59,48,.5)}
 .ud{font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:800;color:var(--text);line-height:1;text-align:center}
 .um{font-size:.56rem;color:var(--text3);text-transform:uppercase;text-align:center}
@@ -191,23 +172,7 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif}
   <div id="pt"></div>
 </div>
 
-<div class="mo" id="modal" onclick="CMO(event)">
-  <div class="md">
-    <h3>Match result</h3>
-    <div class="mmatch" id="mmatch"></div>
-    <div class="mh" id="mhint"></div>
-    <div class="sr">
-      <input type="number" class="si" id="rh" min="0" max="20" placeholder="—">
-      <div style="text-align:center;color:var(--text3)">–</div>
-      <input type="number" class="si" id="ra" min="0" max="20" placeholder="—">
-    </div>
-    <div class="mbs">
-      <button class="btn bcl" onclick="CLR()">✕</button>
-      <button class="btn bcn" onclick="CM()">Cancel</button>
-      <button class="btn bsv" onclick="SV()">Save</button>
-    </div>
-  </div>
-</div>
+
 
 <script>
 // ══ VERCEL ENDPOINT — change this after deployment ══
@@ -300,14 +265,10 @@ MATCHES.forEach(m=>{
 });
 
 // ══ STATE ══
-let LIVE={matches:{},live:[]};
-const SK='wc2026_v7';
-function loadMN(){try{return JSON.parse(localStorage.getItem(SK))||{}}catch(e){return{}}}
-function saveMN(){localStorage.setItem(SK,JSON.stringify(MN))}
-let MN=loadMN();
-function sc(id){return MN[id]??LIVE.matches[id]??null}
-function src(id){return MN[id]?'m':LIVE.matches[id]?'l':null}
-function isLive(id){return(LIVE.live||[]).includes(id)&&!MN[id]}
+let LIVE={matches:{},live:[],minutes:{}};
+function sc(id){return LIVE.matches[id]??null}
+function isLive(id){return(LIVE.live||[]).includes(id)}
+function matchMinute(id){return LIVE.minutes?.[id]??null}
 
 // ══ STATUS ══
 function pd(d,ph){const[day,mo]=d.split('/').map(Number);return new Date(2026,mo-1,day,parseInt(lt(ph)),0,0)}
@@ -358,7 +319,17 @@ function RG(){
       const id=mid(group,m.li),s=sc(id),sr=src(id),live=isLive(id),p=PRED[id],st2=mst(m);
       const hT=g.t[m.hi],aT=g.t[m.ai],hF=g.f[m.hi],aF=g.f[m.ai];
       const played=!!s;
-      const stBadge={done:'<span class="mst st-fin">Final</span>',live:'<span class="mst st-live">● Live</span>',soon:'<span class="mst st-sn">Soon</span>',pending:''}[st2]||'';
+      const minute=matchMinute(id);
+      const stBadge={
+        done:'<span class="mst st-fin">FT</span>',
+        live:`<span class="mst st-live">● ${minute?minute+`'`:'Live'}</span>`,
+        soon:'<span class="mst st-sn">Soon</span>',
+        pending:''
+      }[st2]||'';
+      // Match progress bar (live only)
+      const pct=live&&minute?Math.min(100,Math.round((Math.min(minute,90)/90)*100)):0;
+      const progressBar=live?`<div style="width:100%;height:3px;background:var(--border2);border-radius:2px;margin-top:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--red);border-radius:2px;transition:width .5s"></div></div>`:'';
+
       let pb='';
       if(played&&!live){
         const rr=s[0]>s[1]?'H':s[0]<s[1]?'A':'D',pr=p.s[0]>p.s[1]?'H':p.s[0]<p.s[1]?'A':'D';
@@ -367,7 +338,7 @@ function RG(){
         else pb='<span class="pb pw">✗</span>';
       }
       const[ph,pd2,pa]=p.p;
-      const bc=played?(live?'live':sr==='m'?'manual':'done'):'';
+      const bc=played?(live?'live':'done'):'';
       const blk=document.createElement('div');blk.className='mb';blk.id='b-'+id;
       blk.innerHTML=`
         <div class="mtp">
@@ -375,12 +346,13 @@ function RG(){
           <div class="mc">
             <div class="mdl">${fd(m.date)} · ${m.city}</div>
             <div class="mtl">${m.t}</div>
-            <div class="sw" onclick="OM('${id}','${hT}','${aT}','${sr||''}',${played?s[0]:'null'},${played?s[1]:'null'})">
+            <div class="sw">
               <div class="sb ${bc}">${played?s[0]:'·'}</div>
               <span class="ss">–</span>
               <div class="sb ${bc}">${played?s[1]:'·'}</div>
             </div>
             ${stBadge}
+            ${progressBar}
           </div>
           <div class="mtn a">${aT} ${aF}</div>
         </div>
@@ -396,29 +368,6 @@ function RG(){
     card.appendChild(ms);c.appendChild(card);
   });
 }
-
-// ══ MODAL ══
-let cid=null;
-function OM(id,h,a,sr,sh,sa){
-  cid=id;
-  document.getElementById('mmatch').textContent=`${h} vs ${a}`;
-  document.getElementById('mhint').textContent=
-    sr==='l'?'✓ Score loaded live. Override manually if needed.' :
-    sr==='m'?'✎ Manual override active. Clear to restore live score.' :
-    'No result yet. Scores load automatically during & after matches.';
-  document.getElementById('rh').value=sh!==null&&sh!=='null'?sh:'';
-  document.getElementById('ra').value=sa!==null&&sa!=='null'?sa:'';
-  document.getElementById('modal').classList.add('open');
-  setTimeout(()=>document.getElementById('rh').focus(),80);
-}
-function CM(){document.getElementById('modal').classList.remove('open');cid=null}
-function CMO(e){if(e.target.id==='modal')CM()}
-function SV(){
-  if(!cid)return;
-  const h=document.getElementById('rh').value,a=document.getElementById('ra').value;
-  if(h!==''&&a!==''){MN[cid]=[+h,+a];saveMN();CM();RG();RS()}else CM();
-}
-function CLR(){if(!cid)return;delete MN[cid];saveMN();CM();RG();RS()}
 
 // ══ SCHEDULE ══
 let uf='all';
@@ -443,13 +392,12 @@ function RU(){
     bd[date].forEach(m=>{
       const g=G[m.g],s=sc(m.id),p=PRED[m.id],live=isLive(m.id);
       const stMap={
-        done:`<span style="font-size:.6rem;background:rgba(0,200,83,.12);color:var(--green);padding:2px 5px;border-radius:3px;font-weight:700">✓ Final</span>`,
+        done:`<span style="font-size:.6rem;background:rgba(0,200,83,.12);color:var(--green);padding:2px 5px;border-radius:3px;font-weight:700">✓ FT</span>`,
         live:`<span style="font-size:.6rem;background:rgba(255,59,48,.2);color:var(--red);padding:2px 5px;border-radius:3px;font-weight:700;animation:blink 1.2s infinite">● Live</span>`,
         soon:`<span style="font-size:.6rem;background:rgba(255,214,0,.1);color:var(--gold);padding:2px 5px;border-radius:3px;font-weight:700">Soon</span>`,
         pending:''
       };
       const it=document.createElement('div');it.className='ui'+(live?' islive':'');
-      it.onclick=()=>OM(m.id,g.t[m.hi],g.t[m.ai],src(m.id)||'',s?s[0]:null,s?s[1]:null);
       it.innerHTML=`
         <div><div class="ud">${d}</div><div class="um">${MON[parseInt(mo)-1]}</div><div class="ut">${m.t}</div></div>
         <div>
@@ -549,7 +497,7 @@ async function fetchScores(){
   }catch(e){
     const pill=document.getElementById('fpill');
     pill.className='pill pill-err';pill.textContent='⚠ Offline';
-    document.getElementById('fmsg').textContent='Score feed unavailable — tap any score to enter manually';
+    document.getElementById('fmsg').textContent='Score feed unavailable — will retry automatically';
     console.warn('Scores fetch error:',e.message);
     retryDelay=Math.min(retryDelay*2,300000);
   }
@@ -569,8 +517,6 @@ function V(n){
   document.querySelector(`[onclick="V('${n}')"]`).classList.add('active');
   if(n==='sched')RU();if(n==='ko')RK();if(n==='stats')RS();
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape')CM();if(e.key==='Enter'&&document.getElementById('modal').classList.contains('open'))SV()});
-
 // ══ INIT ══
 RG();
 fetchScores().then(scheduleNext);
