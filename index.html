@@ -316,7 +316,7 @@ function RG(){
     const ms=document.createElement('div');ms.className='ms';
     ms.innerHTML='<div class="ml">Matches · predictions & results</div>';
     GM[group].forEach(m=>{
-      const id=mid(group,m.li),s=sc(id),sr=src(id),live=isLive(id),p=PRED[id],st2=mst(m);
+      const id=mid(group,m.li),s=sc(id),live=isLive(id),p=PRED[id],st2=mst(m);
       const hT=g.t[m.hi],aT=g.t[m.ai],hF=g.f[m.hi],aF=g.f[m.ai];
       const played=!!s;
       const minute=matchMinute(id);
