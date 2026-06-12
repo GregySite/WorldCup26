@@ -351,13 +351,43 @@ let prevMatches={};
 let prevCards={};
 
 function toggleNotif(){
-  if(!('Notification' in window)){alert('Notifications not supported in this browser.');return;}
+  if(!('Notification' in window)){
+    showNotifGuide('Notifications are not supported in this browser. Try Chrome or Safari on iOS 16.4+.');
+    return;
+  }
   if(notifEnabled){notifEnabled=false;updateNotifBtn();return;}
+  if(Notification.permission==='granted'){
+    notifEnabled=true;updateNotifBtn();
+    notify('Notifications enabled','You will be alerted for goals, red cards and match events.','🔔');
+    return;
+  }
+  if(Notification.permission==='denied'){
+    showNotifGuide('You previously blocked notifications. To enable them:\n\n1. Tap the 🔒 lock icon in your browser address bar\n2. Tap "Site settings" or "Permissions"\n3. Set "Notifications" to Allow\n4. Reload the page');
+    return;
+  }
+  // permission === 'default' — request it
   Notification.requestPermission().then(p=>{
     notifEnabled=(p==='granted');
     updateNotifBtn();
-    if(!notifEnabled)alert('Please allow notifications in your browser settings.');
+    if(notifEnabled){
+      notify('Notifications enabled','You will be alerted for goals, red cards and match events.','🔔');
+    } else {
+      showNotifGuide('Notifications were blocked.\n\nTo enable them:\n1. Tap the 🔒 lock icon in your address bar\n2. Tap "Site settings"\n3. Set "Notifications" to Allow\n4. Reload the page');
+    }
   });
+}
+function showNotifGuide(msg){
+  // Show an in-page toast instead of alert
+  let toast=document.getElementById('notif-toast');
+  if(!toast){
+    toast=document.createElement('div');
+    toast.id='notif-toast';
+    toast.style.cssText='position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);background:#1A2B1E;border:1px solid var(--bdr2);border-radius:var(--r);padding:.9rem 1.1rem;font-size:.75rem;color:var(--t2);line-height:1.6;z-index:999;width:min(340px,90vw);box-shadow:0 4px 20px rgba(0,0,0,.5);white-space:pre-line';
+    document.body.appendChild(toast);
+  }
+  toast.textContent=msg;
+  toast.style.display='block';
+  setTimeout(()=>{if(toast)toast.style.display='none';},8000);
 }
 function updateNotifBtn(){
   const btn=document.getElementById('notif-btn');
