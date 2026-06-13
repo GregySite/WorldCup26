@@ -318,14 +318,27 @@ const sc=id=>LIVE.matches[id]??null;
 const isLive=id=>(LIVE.live||[]).includes(id);
 const mMin=id=>LIVE.minutes?.[id]??null;
 
+// ══ USER PREFERENCES (persist across refresh) ══
+const PREF_KEY='wc2026_prefs';
+function loadPrefs(){try{return JSON.parse(localStorage.getItem(PREF_KEY))||{}}catch(e){return{}}}
+function savePrefs(p){localStorage.setItem(PREF_KEY,JSON.stringify(p))}
+let PREFS=loadPrefs();
+// collapsed groups: set of group letters
+const collapsedGroups=new Set(PREFS.collapsed||[]);
+
 // ══ STATUS / DATE ══
 function pd(d,ph){const[day,mo]=d.split('/').map(Number);return new Date(2026,mo-1,day,parseInt(lt(ph)),0,0)}
 function mst(m){
   const id=mid(m.g,m.li);
+  // API data is authoritative — if we have a score and it's not live, it's done
   if(isLive(id))return'live';
   if(sc(id))return'done';
+  // Fallback to time-based status (3h window for "done" to catch matches not yet in API)
   const df=pd(m.date,m.ph)-new Date();
-  if(df<-7200000)return'done';if(df<86400000)return'soon';return'pending';
+  if(df<-10800000)return'done';  // more than 3h ago → assume done
+  if(df<0)return'live';          // started but no score yet → show as live
+  if(df<86400000)return'soon';
+  return'pending';
 }
 const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fd(d){const[day,mo]=d.split('/');return parseInt(day)+' '+MON[parseInt(mo)-1]}
@@ -458,12 +471,34 @@ function stnd(group){
 }
 
 // ══ RENDER GROUPS ══
+function toggleGroup(group){
+  if(collapsedGroups.has(group))collapsedGroups.delete(group);
+  else collapsedGroups.add(group);
+  PREFS.collapsed=[...collapsedGroups];
+  savePrefs(PREFS);
+  RG();
+}
+
 function RG(){
   const c=document.getElementById('gc');c.innerHTML='';
   Object.keys(G).forEach(group=>{
     const st=stnd(group),g=G[group];
+    const collapsed=collapsedGroups.has(group);
+    // Count live matches in this group
+    const hasLive=GM[group].some(m=>isLive(mid(group,m.li)));
     const card=document.createElement('div');card.className='gc';
-    card.innerHTML=`<div class="gh"><div class="gl">Group ${group}</div><div class="gt">Live standings</div></div>`;
+    card.innerHTML=`<div class="gh" onclick="toggleGroup('${group}')" style="cursor:pointer;user-select:none">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <div class="gl">Group ${group}</div>
+        ${hasLive?'<span style="font-size:.55rem;background:rgba(255,59,48,.2);color:var(--red);padding:1px 5px;border-radius:3px;font-weight:700;animation:blink 1.2s infinite">● LIVE</span>':''}
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <div class="gt">${collapsed?'tap to expand':'standings'}</div>
+        <span style="color:var(--t3);font-size:.9rem;display:inline-block;transform:rotate(${collapsed?'-90deg':'0deg'})">▾</span>
+      </div>
+    </div>`;
+    // Collapsible body
+    if(!collapsed){
     // Standings
     const tbl=document.createElement('table');tbl.className='st';
     tbl.innerHTML='<thead><tr><th></th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>';
@@ -533,7 +568,9 @@ function RG(){
         <div class="bleg"><span>${hT.split(' ')[0]} ${ph}%</span><span>Draw ${pd2}%</span><span>${pa}% ${aT.split(' ')[0]}</span></div>`;
       ms.appendChild(blk);
     });
-    card.appendChild(ms);c.appendChild(card);
+    card.appendChild(ms);
+    } // end if(!collapsed)
+    c.appendChild(card);
   });
 }
 
@@ -708,6 +745,7 @@ function V(n){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('view-'+n).classList.add('active');
   document.querySelector(`[onclick="V('${n}')"]`).classList.add('active');
+  PREFS.tab=n;savePrefs(PREFS);
   if(n==='sched')RU();
   if(n==='scorers')RScorers();
   if(n==='ko')RK();
@@ -715,7 +753,8 @@ function V(n){
 }
 
 // ══ INIT ══
-RG();
+// Restore last active tab
+V(PREFS.tab||'groups');
 updateCountdown();
 fetchScores().then(scheduleNext);
 </script>
