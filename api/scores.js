@@ -1,5 +1,6 @@
 // Vercel Serverless Function — World Cup 2026 v2
 // football-data.org free plan: 10 req/min, no daily limit
+// Strategy: max 3 API calls per invocation, well within rate limits
 
 const KEY  = process.env.FOOTBALLDATA_KEY;
 const BASE = 'https://api.football-data.org/v4';
@@ -15,7 +16,9 @@ const TEAM_MAP = {
 const mapT = n => TEAM_MAP[n] || n;
 
 async function get(path) {
-  const r = await fetch(`${BASE}${path}`, { headers:{'X-Auth-Token':KEY} });
+  const r = await fetch(`${BASE}${path}`, {
+    headers: { 'X-Auth-Token': KEY }
+  });
   if (!r.ok) throw new Error(`football-data ${r.status} ${path}`);
   return r.json();
 }
@@ -61,34 +64,62 @@ const LOOKUP = (() => {
   ];
   const gc={}, map={};
   for (const [g,h,a] of raw) {
-    gc[g]=(gc[g]||0);
-    const id=`${g}-${gc[g]++}`;
-    map[`${h}|||${a}`]={id,homeIsFirst:true};
-    map[`${a}|||${h}`]={id,homeIsFirst:false};
+    gc[g] = (gc[g]||0);
+    const id = `${g}-${gc[g]++}`;
+    map[`${h}|||${a}`] = { id, homeIsFirst: true  };
+    map[`${a}|||${h}`] = { id, homeIsFirst: false };
   }
   return map;
 })();
 
-function findMatch(home,away){ return LOOKUP[`${home}|||${away}`]||null; }
+function findMatch(home, away) { return LOOKUP[`${home}|||${away}`] || null; }
 
-function extractEvents(match, fm, goals, cards) {
-  // Goals
-  if (match.goals?.length) {
-    goals[fm.id] = match.goals.map(g => ({
-      min:  g.minute,
-      name: g.scorer?.name || '?',
-      team: mapT(g.team?.name || ''),
-      type: g.type, // REGULAR, OWN_GOAL, PENALTY
-    })).filter(g => g.min != null);
+function processMatch(m, scores, liveIds, minutes, goals, cards) {
+  const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status);
+  const isDone = m.status === 'FINISHED';
+  if (!isLive && !isDone) return;
+
+  const scoreData = m.score?.fullTime;
+  if (!scoreData || scoreData.home == null) return;
+
+  const home = mapT(m.homeTeam?.name || '');
+  const away = mapT(m.awayTeam?.name || '');
+  const fm = findMatch(home, away);
+  if (!fm) return;
+
+  // Score
+  scores[fm.id] = fm.homeIsFirst
+    ? [scoreData.home, scoreData.away]
+    : [scoreData.away, scoreData.home];
+
+  // Live minute
+  if (isLive) {
+    liveIds.push(fm.id);
+    if (m.minute != null) minutes[fm.id] = m.minute + (m.injuryTime||0);
   }
-  // Cards
-  if (match.bookings?.length) {
-    cards[fm.id] = match.bookings.map(b => ({
-      min:  b.minute,
-      name: b.player?.name || '?',
-      team: mapT(b.team?.name || ''),
-      card: b.card, // YELLOW_CARD, RED_CARD, YELLOW_RED_CARD
-    })).filter(b => b.min != null);
+
+  // Goals — available in both list and detail endpoints
+  if (m.goals?.length) {
+    goals[fm.id] = m.goals
+      .filter(g => g.minute != null)
+      .map(g => ({
+        min:  g.minute,
+        name: g.scorer?.name || '?',
+        team: mapT(g.team?.name || ''),
+        type: g.type || 'REGULAR',
+      }));
+  }
+
+  // Cards — available in both list and detail endpoints
+  if (m.bookings?.length) {
+    cards[fm.id] = m.bookings
+      .filter(b => b.minute != null)
+      .map(b => ({
+        min:  b.minute,
+        name: b.player?.name || '?',
+        team: mapT(b.team?.name || ''),
+        card: b.card || 'YELLOW_CARD',
+      }));
   }
 }
 
@@ -100,72 +131,22 @@ export default async function handler(req, res) {
   try {
     const scores={}, liveIds=[], minutes={}, goals={}, cards={};
 
-    // ── Call 1: ALL finished + live matches (scores only, no events on this endpoint) ──
-    const allMatches = await get('/competitions/WC/matches?status=IN_PLAY,PAUSED,HALFTIME,FINISHED');
-    const liveMatchIds = []; // football-data internal IDs for live matches
-
-    for (const m of allMatches.matches||[]) {
-      const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status);
-      const isDone = m.status === 'FINISHED';
-      if (!isLive && !isDone) continue;
-
-      const scoreData = m.score?.fullTime;
-      if (!scoreData || scoreData.home == null) continue;
-
-      const home = mapT(m.homeTeam.name);
-      const away = mapT(m.awayTeam.name);
-      const fm = findMatch(home, away);
-      if (!fm) continue;
-
-      scores[fm.id] = fm.homeIsFirst
-        ? [scoreData.home, scoreData.away]
-        : [scoreData.away, scoreData.home];
-
-      if (isLive) {
-        liveIds.push(fm.id);
-        const mn = m.minute;
-        if (mn != null) minutes[fm.id] = mn + (m.injuryTime||0);
-        liveMatchIds.push({ fdId: m.id, fm });
-      }
-
-      // Extract events from the list endpoint (may be empty for finished)
-      extractEvents(m, fm, goals, cards);
+    // ── Call 1: all finished + live matches ──
+    // The /competitions/{id}/matches endpoint includes goals & bookings
+    // for matches in the response when using the competition endpoint
+    const data1 = await get('/competitions/WC/matches?status=IN_PLAY,PAUSED,HALFTIME,FINISHED');
+    for (const m of data1.matches||[]) {
+      processMatch(m, scores, liveIds, minutes, goals, cards);
     }
 
-    // ── Call 2: Fetch individual match details for recent finished matches (last 2 days)
-    // This gets goals + cards which aren't in the list endpoint ──
-    const twoDaysAgo = new Date(Date.now() - 2*24*3600*1000).toISOString().slice(0,10);
-    const today      = new Date().toISOString().slice(0,10);
-    const recentData = await get(`/competitions/WC/matches?status=FINISHED&dateFrom=${twoDaysAgo}&dateTo=${today}`);
-    const recentIds  = (recentData.matches||[]).map(m => m.id);
+    // ── Call 2: today's matches specifically (fresher data, includes events) ──
+    const today = new Date().toISOString().slice(0,10);
+    const data2 = await get(`/competitions/WC/matches?dateFrom=${today}&dateTo=${today}`);
+    for (const m of data2.matches||[]) {
+      processMatch(m, scores, liveIds, minutes, goals, cards);
+    }
 
-    // Fetch each recent match individually for events (max ~6 matches, well within 10 req/min)
-    await Promise.all(recentIds.slice(0, 8).map(async fdId => {
-      try {
-        const detail = await get(`/matches/${fdId}`);
-        const m = detail.match || detail;
-        if (!m || m.status !== 'FINISHED') return;
-        const home = mapT(m.homeTeam?.name || '');
-        const away = mapT(m.awayTeam?.name || '');
-        const fm = findMatch(home, away);
-        if (!fm) return;
-        extractEvents(m, fm, goals, cards);
-      } catch(e) { /* ignore individual match errors */ }
-    }));
-
-    // ── Call 3: Live match details (for accurate minute + events) ──
-    await Promise.all(liveMatchIds.slice(0, 4).map(async ({fdId, fm}) => {
-      try {
-        const detail = await get(`/matches/${fdId}`);
-        const m = detail.match || detail;
-        if (!m) return;
-        const mn = m.minute;
-        if (mn != null) minutes[fm.id] = mn + (m.injuryTime||0);
-        extractEvents(m, fm, goals, cards);
-      } catch(e) {}
-    }));
-
-    // ── Call 4: Top scorers ──
+    // ── Call 3: top scorers ──
     const scorersData = await get('/competitions/WC/scorers?limit=20');
     const scorers = (scorersData.scorers||[]).map(s => ({
       name:      s.player?.name || '?',
