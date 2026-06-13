@@ -592,6 +592,15 @@ function RU(){
     else if(uf==='done'&&st2!=='done')return;
     (bd[m.date]=bd[m.date]||[]).push({...m,st2,id});
   });
+  // Sort within each date: done first, then live, then upcoming
+  const statusOrder={done:0,live:1,soon:2,pending:3};
+  Object.keys(bd).forEach(date=>{
+    bd[date].sort((a,b)=>{
+      const so=statusOrder[a.st2]-statusOrder[b.st2];
+      if(so!==0)return so;
+      return a.ph-b.ph;
+    });
+  });
   const dates=Object.keys(bd).sort((a,b)=>{const[da,ma]=a.split('/').map(Number),[db,mb]=b.split('/').map(Number);return ma!==mb?ma-mb:da-db});
   if(!dates.length){c.innerHTML='<div style="color:var(--t3);text-align:center;padding:2rem;font-size:.82rem">No matches for this filter.</div>';return}
   let nowInserted=false,nowEl=null;
@@ -600,7 +609,7 @@ function RU(){
     const dh=document.createElement('div');dh.className='dd';dh.textContent=parseInt(d)+' '+MON[parseInt(mo)-1]+' 2026';c.appendChild(dh);
     bd[date].forEach(m=>{
       const g=G[m.g],s=sc(m.id),p=PRED[m.id],live=isLive(m.id),md2=pd(m.date,m.ph);
-      // Insert NOW line before first non-done, non-live match
+      // Insert NOW line before first match that hasn't started yet (not done, not live)
       if(!nowInserted&&m.st2!=='done'&&m.st2!=='live'&&(uf==='all'||uf==='week')){
         const nl=document.createElement('div');nl.className='now-line';nl.id='now-line';
         nl.innerHTML='<div></div><span>▶ Now</span><div></div>';
