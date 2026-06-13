@@ -1,6 +1,6 @@
 // Vercel Serverless Function — World Cup 2026 v2
-// football-data.org free plan: 10 req/min, no daily limit
-// Max 3 sequential API calls
+// football-data.org free plan: 10 req/min
+// Sequential calls only — never parallel
 
 const KEY  = process.env.FOOTBALLDATA_KEY;
 const BASE = 'https://api.football-data.org/v4';
@@ -20,6 +20,9 @@ async function get(path) {
   if (!r.ok) throw new Error(`football-data ${r.status} ${path}`);
   return r.json();
 }
+
+// Small delay helper to stay safely under rate limit
+const wait = ms => new Promise(r => setTimeout(r, ms));
 
 const LOOKUP = (() => {
   const raw = [
@@ -64,26 +67,45 @@ const LOOKUP = (() => {
   for (const [g,h,a] of raw) {
     gc[g]=(gc[g]||0);
     const id=`${g}-${gc[g]++}`;
-    map[`${h}|||${a}`]={id,homeIsFirst:true};
-    map[`${a}|||${h}`]={id,homeIsFirst:false};
+    map[`${h}|||${a}`]={id,homeIsFirst:true,fdId:null};
+    map[`${a}|||${h}`]={id,homeIsFirst:false,fdId:null};
   }
   return map;
 })();
 
 function findMatch(h,a){ return LOOKUP[`${h}|||${a}`]||null; }
 
-function processMatch(m, scores, liveIds, minutes, goals, cards) {
+function applyEvents(m, fm, goals, cards) {
+  if (m.goals?.length) {
+    goals[fm.id] = m.goals.filter(g=>g.minute!=null).map(g=>({
+      min:  g.minute,
+      name: g.scorer?.name || '?',
+      team: mapT(g.team?.name||''),
+      type: g.type || 'REGULAR',
+    }));
+  }
+  if (m.bookings?.length) {
+    cards[fm.id] = m.bookings.filter(b=>b.minute!=null).map(b=>({
+      min:  b.minute,
+      name: b.player?.name || '?',
+      team: mapT(b.team?.name||''),
+      card: b.card || 'YELLOW_CARD',
+    }));
+  }
+}
+
+function processMatch(m, scores, liveIds, minutes, goals, cards, fdIdMap) {
   const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status);
   const isDone = m.status === 'FINISHED';
-  if (!isLive && !isDone) return;
+  if (!isLive && !isDone) return null;
 
   const ft = m.score?.fullTime;
-  if (!ft || ft.home == null) return;
+  if (!ft || ft.home == null) return null;
 
   const home = mapT(m.homeTeam?.name||'');
   const away = mapT(m.awayTeam?.name||'');
   const fm = findMatch(home, away);
-  if (!fm) return;
+  if (!fm) return null;
 
   scores[fm.id] = fm.homeIsFirst ? [ft.home, ft.away] : [ft.away, ft.home];
 
@@ -92,19 +114,13 @@ function processMatch(m, scores, liveIds, minutes, goals, cards) {
     if (m.minute != null) minutes[fm.id] = m.minute + (m.injuryTime||0);
   }
 
-  if (m.goals?.length) {
-    goals[fm.id] = m.goals.filter(g=>g.minute!=null).map(g=>({
-      min: g.minute, name: g.scorer?.name||'?',
-      team: mapT(g.team?.name||''), type: g.type||'REGULAR',
-    }));
-  }
+  // Store football-data internal ID for individual fetch
+  if (m.id) fdIdMap[m.id] = { fm, isLive, isDone };
 
-  if (m.bookings?.length) {
-    cards[fm.id] = m.bookings.filter(b=>b.minute!=null).map(b=>({
-      min: b.minute, name: b.player?.name||'?',
-      team: mapT(b.team?.name||''), card: b.card||'YELLOW_CARD',
-    }));
-  }
+  // Apply events if already in list response (sometimes included)
+  applyEvents(m, fm, goals, cards);
+
+  return fm.id;
 }
 
 export default async function handler(req, res) {
@@ -114,27 +130,75 @@ export default async function handler(req, res) {
 
   try {
     const scores={}, liveIds=[], minutes={}, goals={}, cards={};
+    const fdIdMap = {}; // football-data match ID → our data
 
-    // Call 1 — all matches (no status filter = returns everything)
-    // football-data.org returns all statuses when no filter applied
+    // ── Call 1: all competition matches (scores for everything) ──
     const d1 = await get('/competitions/WC/matches');
-    for (const m of d1.matches||[]) processMatch(m, scores, liveIds, minutes, goals, cards);
+    for (const m of d1.matches||[]) {
+      processMatch(m, scores, liveIds, minutes, goals, cards, fdIdMap);
+    }
 
-    // Call 2 — today specifically for fresher live data
+    // ── Call 2: today's matches for fresher live minute/score ──
     const today = new Date().toISOString().slice(0,10);
     const d2 = await get(`/competitions/WC/matches?dateFrom=${today}&dateTo=${today}`);
-    for (const m of d2.matches||[]) processMatch(m, scores, liveIds, minutes, goals, cards);
+    for (const m of d2.matches||[]) {
+      processMatch(m, scores, liveIds, minutes, goals, cards, fdIdMap);
+    }
 
-    // Call 3 — top scorers
+    // ── Calls 3..N: individual match details for events (sequential) ──
+    // Only fetch matches from last 3 days — limits to ~6 matches max
+    const threeDaysAgo = Date.now() - 3 * 24 * 3600 * 1000;
+    const matchDate = m => new Date(m.utcDate||0).getTime();
+
+    // Get football-data IDs for recent finished + live matches
+    const toFetch = (d1.matches||[]).filter(m => {
+      const relevant = ['FINISHED','IN_PLAY','PAUSED','HALFTIME'].includes(m.status);
+      const recent   = matchDate(m) >= threeDaysAgo;
+      return relevant && recent;
+    });
+
+    // Fetch sequentially with small delay
+    for (const m of toFetch) {
+      if (!fdIdMap[m.id]) continue;
+      await wait(120); // ~120ms between calls → ~8 calls/min safely
+      try {
+        const detail = await get(`/matches/${m.id}`);
+        const md = detail.match || detail;
+        if (!md) continue;
+        const { fm } = fdIdMap[m.id];
+
+        // Update minute for live
+        if (liveIds.includes(fm.id) && md.minute != null) {
+          minutes[fm.id] = md.minute + (md.injuryTime||0);
+        }
+
+        // Apply detailed events (goals + cards)
+        applyEvents(md, fm, goals, cards);
+      } catch(e) {
+        console.warn(`match ${m.id} detail failed:`, e.message);
+        // Continue — don't let one failure break everything
+      }
+    }
+
+    // ── Final call: top scorers ──
+    await wait(120);
     const sd = await get('/competitions/WC/scorers?limit=20');
     const scorers = (sd.scorers||[]).map(s=>({
-      name: s.player?.name||'?', team: mapT(s.team?.name||''),
-      goals: s.goals??0, assists: s.assists??0, penalties: s.penalties??0,
+      name:      s.player?.name || '?',
+      team:      mapT(s.team?.name||''),
+      goals:     s.goals ?? 0,
+      assists:   s.assists ?? 0,
+      penalties: s.penalties ?? 0,
     }));
 
     return res.status(200).json({
       updated: new Date().toISOString(),
-      matches: scores, live: liveIds, minutes, goals, cards, scorers,
+      matches: scores,
+      live:    liveIds,
+      minutes,
+      goals,
+      cards,
+      scorers,
     });
 
   } catch(e) {
