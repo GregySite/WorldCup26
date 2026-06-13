@@ -359,7 +359,7 @@ function updateCountdown(){
 setInterval(updateCountdown,1000);
 
 // ══ NOTIFICATIONS ══
-let notifEnabled=false;
+let notifEnabled=!!(PREFS.notif&&Notification.permission==='granted');
 let prevMatches={};
 let prevCards={};
 
@@ -407,6 +407,8 @@ function updateNotifBtn(){
   if(!btn)return;
   btn.className='notif-btn '+(notifEnabled?'on':'off');
   btn.textContent=notifEnabled?'🔔 Notifications on':'🔔 Notify me';
+  PREFS.notif=notifEnabled;
+  savePrefs(PREFS);
 }
 function notify(title,body,icon='⚽'){
   if(!notifEnabled||Notification.permission!=='granted')return;
@@ -488,12 +490,13 @@ function RG(){
     const hasLive=GM[group].some(m=>isLive(mid(group,m.li)));
     const card=document.createElement('div');card.className='gc';
     card.innerHTML=`<div class="gh" onclick="toggleGroup('${group}')" style="cursor:pointer;user-select:none">
-      <div style="display:flex;align-items:center;gap:.5rem">
+      <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
         <div class="gl">Group ${group}</div>
+        <div style="font-size:.95rem;letter-spacing:.1em">${g.f.join(' ')}</div>
         ${hasLive?'<span style="font-size:.55rem;background:rgba(255,59,48,.2);color:var(--red);padding:1px 5px;border-radius:3px;font-weight:700;animation:blink 1.2s infinite">● LIVE</span>':''}
       </div>
       <div style="display:flex;align-items:center;gap:.5rem">
-        <div class="gt">${collapsed?'tap to expand':'standings'}</div>
+        <div class="gt">${collapsed?'expand':'collapse'}</div>
         <span style="color:var(--t3);font-size:.9rem;display:inline-block;transform:rotate(${collapsed?'-90deg':'0deg'})">▾</span>
       </div>
     </div>`;
@@ -597,7 +600,8 @@ function RU(){
     const dh=document.createElement('div');dh.className='dd';dh.textContent=parseInt(d)+' '+MON[parseInt(mo)-1]+' 2026';c.appendChild(dh);
     bd[date].forEach(m=>{
       const g=G[m.g],s=sc(m.id),p=PRED[m.id],live=isLive(m.id),md2=pd(m.date,m.ph);
-      if(!nowInserted&&!live&&md2>now&&(uf==='all'||uf==='week')){
+      // Insert NOW line before first non-done, non-live match
+      if(!nowInserted&&m.st2!=='done'&&m.st2!=='live'&&(uf==='all'||uf==='week')){
         const nl=document.createElement('div');nl.className='now-line';nl.id='now-line';
         nl.innerHTML='<div></div><span>▶ Now</span><div></div>';
         c.appendChild(nl);nowEl=nl;nowInserted=true;
@@ -753,9 +757,9 @@ function V(n){
 }
 
 // ══ INIT ══
-// Restore last active tab
 V(PREFS.tab||'groups');
 updateCountdown();
+updateNotifBtn(); // restore notification button state
 fetchScores().then(scheduleNext);
 </script>
 <footer style="text-align:center;padding:.7rem;font-size:.65rem;color:var(--t3);border-top:1px solid var(--border);background:var(--bg2)">© 2026 Greg U.</footer>
