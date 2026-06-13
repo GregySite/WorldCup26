@@ -55,7 +55,7 @@ const LOOKUP = (() => {
   return map;
 })();
 
-function process(m, scores, liveIds, minutes, goals, cards) {
+function processMatch(m, scores, liveIds, minutes, goals, cards) {
   const live=['IN_PLAY','PAUSED','HALFTIME'].includes(m.status);
   if(!live && m.status!=='FINISHED') return;
   const ft=m.score?.fullTime;
@@ -78,12 +78,12 @@ export default async function handler(req, res) {
 
     // Call 1 — all matches (no status filter)
     const d1 = await get('/competitions/WC/matches');
-    for(const m of d1.matches||[]) process(m,scores,liveIds,minutes,goals,cards);
+    for(const m of d1.matches||[]) processMatch(m,scores,liveIds,minutes,goals,cards);
 
     // Call 2 — today for fresher live data
     const today=new Date().toISOString().slice(0,10);
     const d2 = await get(`/competitions/WC/matches?dateFrom=${today}&dateTo=${today}`);
-    for(const m of d2.matches||[]) process(m,scores,liveIds,minutes,goals,cards);
+    for(const m of d2.matches||[]) processMatch(m,scores,liveIds,minutes,goals,cards);
 
     // Call 3 — scorers
     const sd = await get('/competitions/WC/scorers?limit=20');
