@@ -18,6 +18,9 @@
   --r:10px;--rs:6px;
 }
 html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font-size:15px}
+/* WRAPPER — max width on desktop */
+.wrap{max-width:1400px;margin:0 auto;width:100%}
+.hdr .wrap,.feed .wrap{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:.5rem}
 /* HEADER */
 .hdr{background:linear-gradient(160deg,#0E1F12,#0A1A0F);border-bottom:1px solid var(--border);padding:1.6rem 1.2rem 1.2rem;text-align:center;position:relative;overflow:hidden}
 .hdr::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 50% -20%,rgba(0,200,83,.15),transparent 70%);pointer-events:none}
@@ -52,7 +55,7 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 /* GROUPS */
-.gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem}
+.gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;max-width:1400px;margin:0 auto}
 .gc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
 .gh{display:flex;align-items:center;justify-content:space-between;padding:.55rem .85rem;background:var(--card2);border-bottom:1px solid var(--border)}
 .gl{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;color:var(--gold)}
@@ -161,6 +164,20 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 .kt:last-of-type{border-bottom:none}
 .kmeta{background:var(--bg2);padding:.18rem .42rem;font-size:.54rem;color:var(--t3);display:flex;justify-content:space-between;border-top:1px solid var(--border)}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px}
+@media(min-width:1200px){
+  .gg{grid-template-columns:repeat(4,1fr)}
+  .view{padding:1.2rem 2rem}
+  .tabs{padding:0 2rem}
+  .hdr{padding:2rem 2rem 1.5rem}
+  .cdown,.feed{padding-left:2rem;padding-right:2rem}
+  .ul{max-width:900px;margin:0 auto}
+  .scorer-list{max-width:700px;margin:0 auto}
+  .sg{max-width:1200px;margin:0 auto 1.2rem}
+  #pt .pt2{max-width:900px;margin:0 auto}
+}
+@media(min-width:900px) and (max-width:1199px){
+  .gg{grid-template-columns:repeat(3,1fr)}
+}
 @media(max-width:580px){.gg{grid-template-columns:1fr}.view{padding:.75rem}}
 </style>
 </head>
