@@ -768,7 +768,7 @@ async function fetchScores(){
     const j=await r.json();
     if(j.error)throw new Error(j.error);
     // Check notifications before updating state
-    checkNotifications(j);
+    try{checkNotifications(j);}catch(ne){console.warn('notif error:',ne.message);}
     LIVE=j;
     const liveNow=(j.live||[]).length,done=Object.keys(j.matches||{}).length;
     const pill=document.getElementById('fpill'),msg=document.getElementById('fmsg'),upd=document.getElementById('fupd');
@@ -788,7 +788,7 @@ async function fetchScores(){
     const pill=document.getElementById('fpill');
     pill.className='pill pill-err';pill.textContent='⚠ Offline';
     document.getElementById('fmsg').textContent='Score feed unavailable — will retry';
-    console.warn('Fetch error:',e.message);
+    console.error('Fetch error:',e.message, e.stack);
   }
 }
 
