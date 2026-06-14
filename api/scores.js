@@ -143,13 +143,15 @@ export default async function handler(req, res) {
     for (const m of d2.matches||[]) processMatch(m, scores, liveIds, minutes, goals, cards);
 
     // ── Calls 3..N: individual match detail for events (sequential, 200ms gap) ──
-    // Max ~6 matches over 3 days → ~6 extra calls → total ~9, well under 10/min
+    console.log(`Fetching details for ${recentFdIds.length} recent matches`);
     for (const { fdId, fm, isLive } of recentFdIds.slice(0, 8)) {
       await wait(200);
       try {
         const detail = await get(`/matches/${fdId}`);
+        // football-data.org wraps in 'match' key or returns directly
         const md = detail.match || detail;
-        if (!md) continue;
+        if (!md) { console.warn(`No match data for ${fdId}`); continue; }
+        console.log(`Match ${fdId}: goals=${md.goals?.length||0} bookings=${md.bookings?.length||0}`);
         // Update live minute
         if (isLive && md.minute != null) {
           minutes[fm.id] = md.minute + (md.injuryTime||0);
@@ -157,7 +159,6 @@ export default async function handler(req, res) {
         applyEvents(md, fm, goals, cards);
       } catch(e) {
         console.warn(`match ${fdId} detail failed: ${e.message}`);
-        // Don't crash — just skip this match's events
       }
     }
 
