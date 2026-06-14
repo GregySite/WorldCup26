@@ -517,9 +517,7 @@ function RG(){
         <span style="color:var(--t3);font-size:.9rem;display:inline-block;transform:rotate(${collapsed?'-90deg':'0deg'})">▾</span>
       </div>
     </div>`;
-    // Collapsible body
-    if(!collapsed){
-    // Standings
+    // Standings — always visible
     const tbl=document.createElement('table');tbl.className='st';
     tbl.innerHTML='<thead><tr><th></th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>';
     const tb=document.createElement('tbody');
@@ -531,7 +529,8 @@ function RG(){
       tb.appendChild(tr);
     });
     tbl.appendChild(tb);card.appendChild(tbl);
-    // Matches
+    // Matches — only when expanded
+    if(!collapsed){
     const ms=document.createElement('div');ms.className='ms';
     ms.innerHTML='<div class="ml">Matches · predictions & results</div>';
     GM[group].forEach(m=>{
