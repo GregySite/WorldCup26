@@ -478,25 +478,25 @@ function RG(){
       </div>
     </div>`;
 
-    if(!isCollapsed){
-      // Standings
-      const tbl=document.createElement('table');tbl.className='st';
-      tbl.innerHTML='<thead><tr><th></th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>';
-      const tb=document.createElement('tbody');
-      st.forEach((t,r)=>{
-        const tr=document.createElement('tr');
-        if(r<2)tr.className='q';else if(r===2)tr.className='p';
-        const gd=t.gf-t.ga;
-        tr.innerHTML=`<td><span style="color:var(--t3);font-size:.62rem">${r+1}</span></td>
-          <td><div class="tc">${fl(t.n)}<span>${t.n}</span></div></td>
-          <td>${t.mp}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
-          <td style="color:${gd>0?'var(--green)':gd<0?'var(--red)':'var(--t2)'}">${gd>0?'+':''}${gd}</td>
-          <td><span class="pts">${t.pts}</span></td>`;
-        tb.appendChild(tr);
-      });
-      tbl.appendChild(tb);card.appendChild(tbl);
+    // Standings — always visible
+    const tbl=document.createElement('table');tbl.className='st';
+    tbl.innerHTML='<thead><tr><th></th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>';
+    const tb=document.createElement('tbody');
+    st.forEach((t,r)=>{
+      const tr=document.createElement('tr');
+      if(r<2)tr.className='q';else if(r===2)tr.className='p';
+      const gd=t.gf-t.ga;
+      tr.innerHTML=`<td><span style="color:var(--t3);font-size:.62rem">${r+1}</span></td>
+        <td><div class="tc">${fl(t.n)}<span>${t.n}</span></div></td>
+        <td>${t.mp}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
+        <td style="color:${gd>0?'var(--green)':gd<0?'var(--red)':'var(--t2)'}">${gd>0?'+':''}${gd}</td>
+        <td><span class="pts">${t.pts}</span></td>`;
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);card.appendChild(tbl);
 
-      // Matches
+    // Matches — only when expanded
+    if(!isCollapsed){
       const ms=document.createElement('div');ms.className='ms';
       ms.innerHTML='<div class="ml">Matches · predictions & results</div>';
       GM[group].forEach(m=>{
