@@ -18,9 +18,6 @@
   --r:10px;--rs:6px;
 }
 html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font-size:15px}
-/* WRAPPER — max width on desktop */
-.wrap{max-width:1400px;margin:0 auto;width:100%}
-.hdr .wrap,.feed .wrap{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:.5rem}
 /* HEADER */
 .hdr{background:linear-gradient(160deg,#0E1F12,#0A1A0F);border-bottom:1px solid var(--border);padding:1.6rem 1.2rem 1.2rem;text-align:center;position:relative;overflow:hidden}
 .hdr::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 80% at 50% -20%,rgba(0,200,83,.15),transparent 70%);pointer-events:none}
@@ -55,8 +52,8 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 /* GROUPS */
-.gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;max-width:1400px;margin:0 auto;align-items:start}
-.gc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;align-self:start}
+.gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem}
+.gc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
 .gh{display:flex;align-items:center;justify-content:space-between;padding:.55rem .85rem;background:var(--card2);border-bottom:1px solid var(--border)}
 .gl{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;font-weight:800;color:var(--gold)}
 .gt{font-size:.58rem;color:var(--t3);letter-spacing:.1em;text-transform:uppercase}
@@ -164,20 +161,6 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 .kt:last-of-type{border-bottom:none}
 .kmeta{background:var(--bg2);padding:.18rem .42rem;font-size:.54rem;color:var(--t3);display:flex;justify-content:space-between;border-top:1px solid var(--border)}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px}
-@media(min-width:1200px){
-  .gg{grid-template-columns:repeat(4,1fr)}
-  .view{padding:1.2rem 2rem}
-  .tabs{padding:0 2rem}
-  .hdr{padding:2rem 2rem 1.5rem}
-  .cdown,.feed{padding-left:2rem;padding-right:2rem}
-  .ul{max-width:900px;margin:0 auto}
-  .scorer-list{max-width:700px;margin:0 auto}
-  .sg{max-width:1200px;margin:0 auto 1.2rem}
-  #pt .pt2{max-width:900px;margin:0 auto}
-}
-@media(min-width:900px) and (max-width:1199px){
-  .gg{grid-template-columns:repeat(3,1fr)}
-}
 @media(max-width:580px){.gg{grid-template-columns:1fr}.view{padding:.75rem}}
 </style>
 </head>
@@ -316,26 +299,7 @@ const GM={};Object.keys(G).forEach(g=>GM[g]=[]);
 MATCHES.forEach(m=>GM[m.g].push(m));
 const mid=(g,li)=>g+'-'+li;
 
-// ══ FLAG IMAGES (flagcdn.com — works on Windows unlike emoji flags) ══
-const FLAG_CODE={
-  "Mexico":"mx","South Africa":"za","South Korea":"kr","Czech Republic":"cz",
-  "Canada":"ca","Bosnia-Herzegovina":"ba","Qatar":"qa","Switzerland":"ch",
-  "Brazil":"br","Morocco":"ma","Haiti":"ht","Scotland":"gb-sct",
-  "USA":"us","Paraguay":"py","Australia":"au","Turkey":"tr",
-  "Germany":"de","Curaçao":"cw","Ivory Coast":"ci","Ecuador":"ec",
-  "Netherlands":"nl","Japan":"jp","Sweden":"se","Tunisia":"tn",
-  "Belgium":"be","Egypt":"eg","Iran":"ir","New Zealand":"nz",
-  "Spain":"es","Cape Verde":"cv","Saudi Arabia":"sa","Uruguay":"uy",
-  "France":"fr","Senegal":"sn","Iraq":"iq","Norway":"no",
-  "Argentina":"ar","Algeria":"dz","Austria":"at","Jordan":"jo",
-  "Portugal":"pt","DR Congo":"cd","Uzbekistan":"uz","Colombia":"co",
-  "England":"gb-eng","Croatia":"hr","Ghana":"gh","Panama":"pa"
-};
-function flag(team,size=16){
-  const code=FLAG_CODE[team];
-  if(!code) return `<span style="font-size:.9rem">${G[Object.keys(G).find(g=>G[g].t.includes(team))]?.f[G[Object.keys(G).find(g=>G[g].t.includes(team))]?.t.indexOf(team)]||'🏳'}</span>`;
-  return `<img src="https://flagcdn.com/w${size}/${code}.png" width="${size}" height="${Math.round(size*0.75)}" style="border-radius:2px;vertical-align:middle;flex-shrink:0" alt="${team}">`;
-}
+// ══ PREDICTIONS ══
 function pred(h,a){const d=h-a;return[Math.min(4,Math.max(0,Math.round(1.5+d*.04))),Math.min(4,Math.max(0,Math.round(1.3-d*.04)))]}
 function probs(h,a){
   const d=h-a,eH=1/(1+Math.pow(10,-d/30)),cl=1-Math.abs(eH-.5)*2,pD=Math.round((0.18+0.14*cl)*100);
@@ -390,7 +354,7 @@ function updateCountdown(){
   const diff=next.d-now;
   const h=Math.floor(diff/3600000),mn=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
   const g=G[next.m.g],hT=g.t[next.m.hi],aT=g.t[next.m.ai];
-  el.innerHTML=`Next match: <span class="match-name" style="display:inline-flex;align-items:center;gap:.3rem">${flag(hT)} ${hT} vs ${aT} ${flag(aT)}</span> — <b>${h>0?h+'h ':''}</b><b>${String(mn).padStart(2,'0')}:${String(s).padStart(2,'0')}</b>`;
+  el.innerHTML=`Next match: <span class="match-name">${g.f[next.m.hi]} ${hT} vs ${aT} ${g.f[next.m.ai]}</span> — <b>${h>0?h+'h ':''}</b><b>${String(mn).padStart(2,'0')}:${String(s).padStart(2,'0')}</b>`;
 }
 setInterval(updateCountdown,1000);
 
@@ -528,7 +492,7 @@ function RG(){
     card.innerHTML=`<div class="gh" onclick="toggleGroup('${group}')" style="cursor:pointer;user-select:none">
       <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
         <div class="gl">Group ${group}</div>
-        <div style="display:flex;align-items:center;gap:3px">${g.t.map(t=>flag(t,18)).join('')}</div>
+        <div style="font-size:.95rem;letter-spacing:.1em">${g.f.join(' ')}</div>
         ${hasLive?'<span style="font-size:.55rem;background:rgba(255,59,48,.2);color:var(--red);padding:1px 5px;border-radius:3px;font-weight:700;animation:blink 1.2s infinite">● LIVE</span>':''}
       </div>
       <div style="display:flex;align-items:center;gap:.5rem">
@@ -536,7 +500,9 @@ function RG(){
         <span style="color:var(--t3);font-size:.9rem;display:inline-block;transform:rotate(${collapsed?'-90deg':'0deg'})">▾</span>
       </div>
     </div>`;
-    // Standings — always visible
+    // Collapsible body
+    if(!collapsed){
+    // Standings
     const tbl=document.createElement('table');tbl.className='st';
     tbl.innerHTML='<thead><tr><th></th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>';
     const tb=document.createElement('tbody');
@@ -544,17 +510,16 @@ function RG(){
       const tr=document.createElement('tr');
       if(r<2)tr.className='q';else if(r===2)tr.className='p';
       const gd=t.gf-t.ga;
-      tr.innerHTML=`<td><span style="color:var(--t3);font-size:.62rem">${r+1}</span></td><td><div class="tc">${flag(t.n,20)}${t.n}</div></td><td>${t.mp}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td><td style="color:${gd>0?'var(--green)':gd<0?'var(--red)':'var(--t2)'}">${gd>0?'+':''}${gd}</td><td><span class="pts">${t.pts}</span></td>`;
+      tr.innerHTML=`<td><span style="color:var(--t3);font-size:.62rem">${r+1}</span></td><td><div class="tc"><span style="font-size:.88rem">${t.f}</span>${t.n}</div></td><td>${t.mp}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td><td style="color:${gd>0?'var(--green)':gd<0?'var(--red)':'var(--t2)'}">${gd>0?'+':''}${gd}</td><td><span class="pts">${t.pts}</span></td>`;
       tb.appendChild(tr);
     });
     tbl.appendChild(tb);card.appendChild(tbl);
-    // Matches — only when expanded
-    if(!collapsed){
+    // Matches
     const ms=document.createElement('div');ms.className='ms';
     ms.innerHTML='<div class="ml">Matches · predictions & results</div>';
     GM[group].forEach(m=>{
       const id=mid(group,m.li),s=sc(id),live=isLive(id),p=PRED[id],st2=mst(m);
-      const hT=g.t[m.hi],aT=g.t[m.ai];
+      const hT=g.t[m.hi],aT=g.t[m.ai],hF=g.f[m.hi],aF=g.f[m.ai];
       const played=!!s;
       const mn=mMin(id);
       const pct=live&&mn?Math.min(100,Math.round(Math.min(mn,90)/90*100)):0;
@@ -582,7 +547,7 @@ function RG(){
       const blk=document.createElement('div');blk.className='mb';blk.id='b-'+id;
       blk.innerHTML=`
         <div class="mt">
-          <div class="mtn h">${flag(hT)} ${hT}</div>
+          <div class="mtn h">${hF} ${hT}</div>
           <div class="mc">
             <div class="mdl">${fd(m.date)} · ${m.city}</div>
             <div class="mtl">${m.t}</div>
@@ -594,7 +559,7 @@ function RG(){
             ${stBadge}
             ${live?`<div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div>`:''}
           </div>
-          <div class="mtn a">${aT} ${flag(aT)}</div>
+          <div class="mtn a">${aT} ${aF}</div>
         </div>
         ${evtsHtml}
         <div class="pl">
@@ -686,7 +651,7 @@ function RU(){
       it.innerHTML=`
         <div><div class="ud">${d}</div><div class="um">${MON[parseInt(mo)-1]}</div><div class="ut">${m.t}</div></div>
         <div style="min-width:0">
-          <div style="font-weight:600;font-size:.84rem;display:flex;align-items:center;gap:.3rem">${flag(g.t[m.hi])} ${g.t[m.hi]} <span style="color:var(--t3);font-weight:400">vs</span> ${g.t[m.ai]} ${flag(g.t[m.ai])}</div>
+          <div style="font-weight:600;font-size:.84rem">${g.f[m.hi]} ${g.t[m.hi]} <span style="color:var(--t3);font-weight:400">vs</span> ${g.t[m.ai]} ${g.f[m.ai]}</div>
           <div style="font-size:.66rem;color:var(--t2);margin-top:.1rem">${m.city} · Group ${m.g}</div>
           <div style="margin-top:.28rem;display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
             ${stMap[m.st2]||''}
@@ -786,7 +751,7 @@ async function fetchScores(){
     const j=await r.json();
     if(j.error)throw new Error(j.error);
     // Check notifications before updating state
-    try{checkNotifications(j);}catch(ne){console.warn('notif error:',ne.message);}
+    checkNotifications(j);
     LIVE=j;
     const liveNow=(j.live||[]).length,done=Object.keys(j.matches||{}).length;
     const pill=document.getElementById('fpill'),msg=document.getElementById('fmsg'),upd=document.getElementById('fupd');
@@ -806,7 +771,7 @@ async function fetchScores(){
     const pill=document.getElementById('fpill');
     pill.className='pill pill-err';pill.textContent='⚠ Offline';
     document.getElementById('fmsg').textContent='Score feed unavailable — will retry';
-    console.error('Fetch error:',e.message, e.stack);
+    console.warn('Fetch error:',e.message);
   }
 }
 
