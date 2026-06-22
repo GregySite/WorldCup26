@@ -71,12 +71,33 @@ const LOOKUP = (() => {
 
 function processMatch(m, scores, liveIds, minutes) {
   const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status);
-  if (!isLive && m.status !== 'FINISHED') return;
-  const ft = m.score?.fullTime;
-  if (!ft || ft.home == null) return;
+  const isDone = m.status === 'FINISHED';
+  if (!isLive && !isDone) return;
+
   const fm = LOOKUP[`${mapT(m.homeTeam?.name||'')}|||${mapT(m.awayTeam?.name||'')}`];
-  if (!fm) return;
-  scores[fm.id] = fm.hi ? [ft.home, ft.away] : [ft.away, ft.home];
+  if (!fm) {
+    console.warn('No match found:', m.homeTeam?.name, 'vs', m.awayTeam?.name, '| status:', m.status);
+    return;
+  }
+
+  // For FINISHED matches, fall back to 0-0 if API hasn't filled fullTime
+  // (happens when no goals were scored — football-data sometimes leaves it null)
+  let home = m.score?.fullTime?.home;
+  let away = m.score?.fullTime?.away;
+  if (home == null || away == null) {
+    if (isDone) {
+      // Try halfTime score as fallback, then default to 0-0 for a finished match
+      home = m.score?.halfTime?.home ?? 0;
+      away = m.score?.halfTime?.away ?? 0;
+    } else {
+      // Live match with no goals yet — show 0-0, not blank
+      home = 0;
+      away = 0;
+    }
+  }
+
+  scores[fm.id] = fm.hi ? [home, away] : [away, home];
+
   if (isLive) {
     if (!liveIds.includes(fm.id)) liveIds.push(fm.id);
     if (m.minute != null) minutes[fm.id] = m.minute + (m.injuryTime||0);
