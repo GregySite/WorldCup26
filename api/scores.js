@@ -1,5 +1,6 @@
 // Vercel Serverless Function — World Cup 2026 v2
-// football-data.org free plan — 2 calls only, fast & reliable
+// football-data.org free plan — 2 calls only
+// Handles 0-0 matches that football-data omits from results
 
 const KEY  = process.env.FOOTBALLDATA_KEY;
 const BASE = 'https://api.football-data.org/v4';
@@ -19,6 +20,47 @@ async function get(path) {
   if (!r.ok) throw new Error(`football-data ${r.status} ${path}`);
   return r.json();
 }
+
+// UTC kickoff times for all 72 group stage matches
+// Used to detect finished 0-0 matches omitted by football-data API
+const MATCH_DATES = {
+  'A-0':'2026-06-11T19:00:00Z','A-1':'2026-06-12T02:00:00Z',
+  'B-0':'2026-06-12T19:00:00Z','B-1':'2026-06-13T19:00:00Z',
+  'C-0':'2026-06-14T22:00:00Z','C-1':'2026-06-14T01:00:00Z',
+  'D-0':'2026-06-13T01:00:00Z','D-1':'2026-06-14T04:00:00Z',
+  'E-0':'2026-06-14T17:00:00Z','E-1':'2026-06-15T23:00:00Z',
+  'F-0':'2026-06-14T20:00:00Z','F-1':'2026-06-15T02:00:00Z',
+  'G-0':'2026-06-15T19:00:00Z','G-1':'2026-06-16T01:00:00Z',
+  'H-0':'2026-06-15T16:00:00Z','H-1':'2026-06-16T22:00:00Z',
+  'I-0':'2026-06-16T19:00:00Z','I-1':'2026-06-17T22:00:00Z',
+  'J-0':'2026-06-17T01:00:00Z','J-1':'2026-06-17T04:00:00Z',
+  'K-0':'2026-06-17T17:00:00Z','K-1':'2026-06-18T02:00:00Z',
+  'L-0':'2026-06-17T20:00:00Z','L-1':'2026-06-18T23:00:00Z',
+  'A-2':'2026-06-18T16:00:00Z','A-3':'2026-06-19T01:00:00Z',
+  'B-2':'2026-06-18T19:00:00Z','B-3':'2026-06-19T22:00:00Z',
+  'C-2':'2026-06-20T22:00:00Z','C-3':'2026-06-20T00:00:00Z',
+  'D-2':'2026-06-19T19:00:00Z','D-3':'2026-06-20T03:00:00Z',
+  'E-2':'2026-06-20T20:00:00Z','E-3':'2026-06-21T00:00:00Z',
+  'F-2':'2026-06-20T17:00:00Z','F-3':'2026-06-21T04:00:00Z',
+  'G-2':'2026-06-21T19:00:00Z','G-3':'2026-06-22T01:00:00Z',
+  'H-2':'2026-06-21T16:00:00Z','H-3':'2026-06-22T22:00:00Z',
+  'I-2':'2026-06-22T21:00:00Z','I-3':'2026-06-23T00:00:00Z',
+  'J-2':'2026-06-22T17:00:00Z','J-3':'2026-06-23T03:00:00Z',
+  'K-2':'2026-06-23T17:00:00Z','K-3':'2026-06-24T02:00:00Z',
+  'L-2':'2026-06-23T20:00:00Z','L-3':'2026-06-24T23:00:00Z',
+  'A-4':'2026-06-25T01:00:00Z','A-5':'2026-06-25T01:00:00Z',
+  'B-4':'2026-06-24T19:00:00Z','B-5':'2026-06-24T19:00:00Z',
+  'C-4':'2026-06-25T22:00:00Z','C-5':'2026-06-25T22:00:00Z',
+  'D-4':'2026-06-26T02:00:00Z','D-5':'2026-06-26T02:00:00Z',
+  'E-4':'2026-06-25T20:00:00Z','E-5':'2026-06-25T20:00:00Z',
+  'F-4':'2026-06-26T23:00:00Z','F-5':'2026-06-26T23:00:00Z',
+  'G-4':'2026-06-27T03:00:00Z','G-5':'2026-06-27T03:00:00Z',
+  'H-4':'2026-06-27T00:00:00Z','H-5':'2026-06-27T00:00:00Z',
+  'I-4':'2026-06-26T19:00:00Z','I-5':'2026-06-26T19:00:00Z',
+  'J-4':'2026-06-28T02:00:00Z','J-5':'2026-06-28T02:00:00Z',
+  'K-4':'2026-06-28T23:00:00Z','K-5':'2026-06-28T23:00:00Z',
+  'L-4':'2026-06-27T21:00:00Z','L-5':'2026-06-27T21:00:00Z',
+};
 
 const LOOKUP = (() => {
   const raw = [
@@ -76,25 +118,14 @@ function processMatch(m, scores, liveIds, minutes) {
 
   const fm = LOOKUP[`${mapT(m.homeTeam?.name||'')}|||${mapT(m.awayTeam?.name||'')}`];
   if (!fm) {
-    console.warn('No match found:', m.homeTeam?.name, 'vs', m.awayTeam?.name, '| status:', m.status);
+    console.warn('No match found:', m.homeTeam?.name, 'vs', m.awayTeam?.name);
     return;
   }
 
-  // For FINISHED matches, fall back to 0-0 if API hasn't filled fullTime
-  // (happens when no goals were scored — football-data sometimes leaves it null)
-  let home = m.score?.fullTime?.home;
-  let away = m.score?.fullTime?.away;
-  if (home == null || away == null) {
-    if (isDone) {
-      // Try halfTime score as fallback, then default to 0-0 for a finished match
-      home = m.score?.halfTime?.home ?? 0;
-      away = m.score?.halfTime?.away ?? 0;
-    } else {
-      // Live match with no goals yet — show 0-0, not blank
-      home = 0;
-      away = 0;
-    }
-  }
+  // Get score — football-data sometimes returns null for 0-0
+  let home = m.score?.fullTime?.home ?? m.score?.regularTime?.home ?? m.score?.halfTime?.home;
+  let away = m.score?.fullTime?.away ?? m.score?.regularTime?.away ?? m.score?.halfTime?.away;
+  if (home == null || away == null) { home = 0; away = 0; }
 
   scores[fm.id] = fm.hi ? [home, away] : [away, home];
 
@@ -112,9 +143,22 @@ export default async function handler(req, res) {
   try {
     const scores={}, liveIds=[], minutes={};
 
-    // Call 1 — all matches (scores + live status)
+    // Call 1 — all matches
     const d1 = await get('/competitions/WC/matches');
     for (const m of d1.matches||[]) processMatch(m, scores, liveIds, minutes);
+
+    // Fill in 0-0 for finished matches not returned by API
+    // (football-data omits matches where fullTime score is null/0-0)
+    const now = new Date();
+    for (const [id, utcTime] of Object.entries(MATCH_DATES)) {
+      if (scores[id] !== undefined) continue; // already have a score
+      if (liveIds.includes(id)) continue;     // currently live
+      const kickoff = new Date(utcTime);
+      // If match started more than 2h ago → finished, default 0-0
+      if (now - kickoff > 2 * 3600 * 1000) {
+        scores[id] = [0, 0];
+      }
+    }
 
     // Call 2 — top scorers
     const sd = await get('/competitions/WC/scorers?limit=20');
