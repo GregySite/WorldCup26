@@ -368,7 +368,15 @@ let PREFS=loadP();
 const collapsed=new Set(PREFS.collapsed||[]);
 
 // ══ STATUS ══
-function pd(d,ph){const[day,mo]=d.split('/').map(Number);return new Date(2026,mo-1,day,parseInt(lt(ph)),0,0)}
+function pd(d,ph){
+  const[day,mo]=d.split('/').map(Number);
+  const lo=-(new Date().getTimezoneOffset()/60);
+  const utcH=(ph-2+24)%24; // Paris=UTC+2, convert to UTC
+  const localH=(utcH+lo+24)%24;
+  const rollover=(utcH+lo)>=24?1:(utcH+lo)<0?-1:0; // did we cross midnight?
+  const date=new Date(2026,mo-1,day+rollover,localH,0,0);
+  return date;
+}
 function mst(m){
   const id=mid(m.g,m.li);
   if(isLive(id))return'live';
