@@ -40,8 +40,7 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 .pill-ok{background:var(--gd);color:var(--green)}
 .pill-wait{background:var(--gdim);color:var(--gold)}
 .pill-err{background:rgba(255,255,255,.05);color:var(--t3)}
-.notif-btn{font-size:.62rem;padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid var(--bdr2);background:var(--card);color:var(--t3);transition:all .15s;white-space:nowrap}
-.notif-btn.on{border-color:var(--green);color:var(--green);background:var(--gd)}
+
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 
@@ -206,7 +205,6 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
   <span class="pill pill-wait" id="fpill">⏳ Loading</span>
   <span id="fmsg" style="color:var(--t2)">Connecting…</span>
   <span id="fupd" style="color:var(--t3)"></span>
-  <button class="notif-btn" id="notif-btn" onclick="toggleNotif()">🔔 Notify me</button>
 </div>
 
 <nav class="tabs">
@@ -406,47 +404,6 @@ function updateCd(){
 }
 setInterval(updateCd,1000);
 
-// ══ NOTIFICATIONS ══
-let notifOn=!!(PREFS.notif&&typeof Notification!=='undefined'&&Notification.permission==='granted');
-let prevGoals={},prevCards={};
-function toggleNotif(){
-  if(typeof Notification==='undefined'){showToast('Notifications not supported in this browser.');return;}
-  if(notifOn){notifOn=false;updateNotifBtn();return;}
-  if(Notification.permission==='granted'){notifOn=true;updateNotifBtn();notify('Notifications enabled','You will be alerted for goals and match events.','🔔');return;}
-  if(Notification.permission==='denied'){showToast('Notifications blocked.\n\n1. Tap 🔒 in address bar\n2. Site settings\n3. Notifications → Allow\n4. Reload page');return;}
-  Notification.requestPermission().then(p=>{notifOn=(p==='granted');updateNotifBtn();if(notifOn)notify('Notifications enabled','Alerts for goals, red cards and match events.','🔔');else showToast('Notifications blocked.\n\n1. Tap 🔒 in address bar\n2. Site settings → Notifications → Allow\n3. Reload page');});
-}
-function updateNotifBtn(){
-  const btn=document.getElementById('notif-btn');
-  if(!btn)return;
-  btn.className='notif-btn '+(notifOn?'on':'');
-  btn.textContent=notifOn?'🔔 Notifications on':'🔔 Notify me';
-  PREFS.notif=notifOn;saveP();
-}
-function showToast(msg){
-  let t=document.getElementById('toast');
-  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;bottom:1.2rem;left:50%;transform:translateX(-50%);background:#1A2B1E;border:1px solid var(--bdr2);border-radius:var(--r);padding:.9rem 1.1rem;font-size:.75rem;color:var(--t2);line-height:1.6;z-index:999;width:min(340px,90vw);box-shadow:0 4px 20px rgba(0,0,0,.5);white-space:pre-line';document.body.appendChild(t);}
-  t.textContent=msg;t.style.display='block';setTimeout(()=>{t.style.display='none'},8000);
-}
-function notify(title,body,icon='⚽'){
-  if(!notifOn||typeof Notification==='undefined'||Notification.permission!=='granted')return;
-  try{new Notification(icon+' '+title,{body});}catch(e){}
-}
-function checkNotifs(j){
-  (j.live||[]).forEach(id=>{
-    if(!(LIVE.live||[]).includes(id)){
-      const m=MATCHES.find(x=>mid(x.g,x.li)===id);
-      if(m){const g=G[m.g];notify('Match started!',`${g.t[m.hi]} vs ${g.t[m.ai]}`,'⏱️');}
-    }
-  });
-  (LIVE.live||[]).forEach(id=>{
-    if(!(j.live||[]).includes(id)&&j.matches?.[id]){
-      const s=j.matches[id],m=MATCHES.find(x=>mid(x.g,x.li)===id);
-      if(m){const g=G[m.g];notify('Full time!',`${g.t[m.hi]} ${s[0]}–${s[1]} ${g.t[m.ai]}`,'✅');}
-    }
-  });
-}
-
 // ══ STANDINGS ══
 function stnd(group){
   const g=G[group];
@@ -491,15 +448,26 @@ function RG(){
     const tbl=document.createElement('table');tbl.className='st';
     tbl.innerHTML='<thead><tr><th></th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>';
     const tb=document.createElement('tbody');
+    // Group is complete when all 6 matches are played
+    const groupDone=GM[group].every(m=>!!sc(mid(group,m.li)));
     st.forEach((t,r)=>{
       const tr=document.createElement('tr');
       if(r<2)tr.className='q';else if(r===2)tr.className='p';
+      // Strike through eliminated teams (3rd and 4th) once group is fully played
+      const eliminated=groupDone&&r>=3;
+      const nameStyle=eliminated?'text-decoration:line-through;opacity:.45;':'';
       const gd=t.gf-t.ga;
       tr.innerHTML=`<td><span style="color:var(--t3);font-size:.62rem">${r+1}</span></td>
-        <td><div class="tc">${fl(t.n)}<span>${t.n}</span></div></td>
-        <td>${t.mp}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
-        <td style="color:${gd>0?'var(--green)':gd<0?'var(--red)':'var(--t2)'}">${gd>0?'+':''}${gd}</td>
-        <td><span class="pts">${t.pts}</span></td>`;
+        <td><div class="tc" style="${eliminated?'opacity:.45':''}">
+          ${fl(t.n)}<span style="${nameStyle}">${t.n}</span>
+          ${eliminated?'<span style="font-size:.55rem;color:var(--red);margin-left:2px">✕</span>':''}
+        </div></td>
+        <td style="${eliminated?'opacity:.45':''}">${t.mp}</td>
+        <td style="${eliminated?'opacity:.45':''}">${t.w}</td>
+        <td style="${eliminated?'opacity:.45':''}">${t.d}</td>
+        <td style="${eliminated?'opacity:.45':''}">${t.l}</td>
+        <td style="color:${gd>0?'var(--green)':gd<0?'var(--red)':'var(--t2)'};${eliminated?'opacity:.45':''}">${gd>0?'+':''}${gd}</td>
+        <td style="${eliminated?'opacity:.45':''}"><span class="pts">${t.pts}</span></td>`;
       tb.appendChild(tr);
     });
     tbl.appendChild(tb);card.appendChild(tbl);
@@ -691,7 +659,6 @@ async function fetchScores(){
     if(!r.ok)throw new Error('HTTP '+r.status);
     const j=await r.json();
     if(j.error)throw new Error(j.error);
-    try{checkNotifs(j)}catch(e){}
     LIVE=j;
     const liveNow=(j.live||[]).length,done=Object.keys(j.matches||{}).length;
     const pill=document.getElementById('fpill'),msg=document.getElementById('fmsg'),upd=document.getElementById('fupd');
@@ -732,7 +699,6 @@ function V(n){
 }
 
 // ══ INIT ══
-updateNotifBtn();
 V(PREFS.tab||'groups');
 updateCd();
 fetchScores().then(scheduleNext);
