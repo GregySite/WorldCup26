@@ -597,7 +597,7 @@ function RScorers(){
       <div class="scorer-rank${top?' top':''}">${top?rm[i]:i+1}</div>
       ${fl(s.team,'fl')}
       <div><div class="scorer-name">${s.name}</div><div class="scorer-team">${s.team}</div></div>
-      <div><div class="scorer-goals">${s.goals}</div><div class="scorer-sub">${s.assists?s.assists+' ast':''} ${s.penalties?'('+s.penalties+' P)':''}</div></div>
+      <div><div class="scorer-goals">${s.goals} ⚽</div><div class="scorer-sub">${s.assists?'🎯 '+s.assists+' assist'+(s.assists>1?'s':''):''} ${s.penalties?'('+s.penalties+' pen)':''}</div></div>
     </div>`;
   }).join('');
 }
