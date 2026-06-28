@@ -10,8 +10,9 @@ const TEAM_MAP = {
   'United States':'USA','Türkiye':'Turkey',
   "Côte d'Ivoire":'Ivory Coast',"Cote d'Ivoire":'Ivory Coast',
   'IR Iran':'Iran',
-  'Cabo Verde':'Cape Verde','Cape Verde Islands':'Cape Verde','República de Cabo Verde':'Cape Verde',
+  'Cabo Verde':'Cape Verde','Cape Verde Islands':'Cape Verde',
   'Congo DR':'DR Congo','Democratic Republic of Congo':'DR Congo','Congo, DR':'DR Congo',
+  'Cote d\'Ivoire':'Ivory Coast',"Côte d'Ivoire":'Ivory Coast',
 };
 const mapT = n => TEAM_MAP[n] || n;
 
