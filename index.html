@@ -325,7 +325,27 @@ const MR=[
   ["L","27/06","New York",1,2,23],["L","27/06","Philadelphia",0,3,23]
 ];
 
-// ══ TIME ══
+// ══ KO MATCHES (phase finale) ══
+// ph = heure Paris (UTC+2 en été)
+const KO_MATCHES=[
+  // Round of 32
+  {id:'R32-1', date:'28/06',city:'Inglewood',   h:'South Africa',  a:'Canada',            ph:21, round:'R32'},
+  {id:'R32-2', date:'29/06',city:'Houston',      h:'Brazil',        a:'Japan',             ph:19, round:'R32'},
+  {id:'R32-3', date:'29/06',city:'Boston',       h:'Germany',       a:'Paraguay',          ph:22, round:'R32'},
+  {id:'R32-4', date:'29/06',city:'Monterrey',    h:'Netherlands',   a:'Morocco',           ph:3,  round:'R32'},
+  {id:'R32-5', date:'30/06',city:'Arlington',    h:'Ivory Coast',   a:'Norway',            ph:19, round:'R32'},
+  {id:'R32-6', date:'30/06',city:'E.Rutherford', h:'France',        a:'Sweden',            ph:23, round:'R32'},
+  {id:'R32-7', date:'30/06',city:'Mexico City',  h:'Mexico',        a:'Ecuador',           ph:3,  round:'R32'},
+  {id:'R32-8', date:'01/07',city:'Atlanta',      h:'England',       a:'DR Congo',          ph:18, round:'R32'},
+  {id:'R32-9', date:'01/07',city:'Seattle',      h:'Belgium',       a:'Senegal',           ph:19, round:'R32'},
+  {id:'R32-10',date:'01/07',city:'Santa Clara',  h:'USA',           a:'Bosnia-Herzegovina',ph:2,  round:'R32'},
+  {id:'R32-11',date:'02/07',city:'Inglewood',    h:'Spain',         a:'Austria',           ph:21, round:'R32'},
+  {id:'R32-12',date:'02/07',city:'Vancouver',    h:'Switzerland',   a:'Algeria',           ph:1,  round:'R32'},
+  {id:'R32-13',date:'02/07',city:'Toronto',      h:'Portugal',      a:'Croatia',           ph:1,  round:'R32'},
+  {id:'R32-14',date:'03/07',city:'Arlington',    h:'Australia',     a:'Egypt',             ph:20, round:'R32'},
+  {id:'R32-15',date:'03/07',city:'Miami',        h:'Argentina',     a:'Cape Verde',        ph:0,  round:'R32'},
+  {id:'R32-16',date:'03/07',city:'Kansas City',  h:'Colombia',      a:'Ghana',             ph:3,  round:'R32'},
+];
 const PO=2;
 function lt(ph){const lo=-(new Date().getTimezoneOffset()/60);return String(((ph+(lo-PO))+24)%24).padStart(2,'0')+':00'}
 try{document.getElementById('tz').textContent=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){}
@@ -554,9 +574,22 @@ function RG(){
 // ══ SCHEDULE ══
 let uf='all';
 function UF(f,btn){uf=f;document.querySelectorAll('#fb button').forEach(b=>b.classList.remove('act'));btn.classList.add('act');RU()}
+
+function koMatchStatus(m){
+  const matchTime=pd(m.date,m.ph);
+  const now=new Date();
+  const diff=matchTime-now;
+  if(diff>0&&diff<86400000) return'soon';
+  if(diff<=0&&diff>-10800000) return'live'; // within 3h of kickoff
+  if(diff<=-10800000) return'done';
+  return'pending';
+}
+
 function RU(){
   const c=document.getElementById('ul');c.innerHTML='';const now=new Date();
   const bd={};
+
+  // Group stage matches
   MATCHES.forEach(m=>{
     const id=mid(m.g,m.li),st2=mst(m),md2=pd(m.date,m.ph);
     if(uf==='today'){const t=new Date();if(md2.getDate()!==t.getDate()||md2.getMonth()!==t.getMonth())return}
@@ -564,7 +597,18 @@ function RU(){
     else if(uf==='live'&&st2!=='live')return;
     else if(uf==='soon'&&(st2==='done'||st2==='live'))return;
     else if(uf==='done'&&st2!=='done')return;
-    (bd[m.date]=bd[m.date]||[]).push({...m,st2,id});
+    (bd[m.date]=bd[m.date]||[]).push({...m,st2,id,isKO:false});
+  });
+
+  // Knockout stage matches
+  KO_MATCHES.forEach(m=>{
+    const st2=koMatchStatus(m),md2=pd(m.date,m.ph);
+    if(uf==='today'){const t=new Date();if(md2.getDate()!==t.getDate()||md2.getMonth()!==t.getMonth())return}
+    else if(uf==='week'){const df=md2-now;if(df<-86400000||df>7*86400000)return}
+    else if(uf==='live'&&st2!=='live')return;
+    else if(uf==='soon'&&(st2==='done'||st2==='live'))return;
+    else if(uf==='done'&&st2!=='done')return;
+    (bd[m.date]=bd[m.date]||[]).push({...m,st2,isKO:true});
   });
   const sOrd={done:0,live:1,soon:2,pending:3};
   Object.keys(bd).forEach(date=>{bd[date].sort((a,b)=>sOrd[a.st2]-sOrd[b.st2]||a.ph-b.ph)});
@@ -588,26 +632,51 @@ function RU(){
         soon:`<span style="font-size:.58rem;background:rgba(255,214,0,.1);color:var(--gold);padding:2px 5px;border-radius:3px;font-weight:700">Soon</span>`,
         pending:''
       };
-      const mn=mMin(m.id);
-      const it=document.createElement('div');it.className='ui'+(live?' islive':'');
-      it.innerHTML=`
-        <div><div class="ud">${d}</div><div class="um">${MON[parseInt(mo)-1]}</div><div class="ut">${m.t}</div></div>
-        <div style="min-width:0">
-          <div style="font-weight:600;font-size:.84rem;display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">
-            ${fl(g.t[m.hi],'fl fl-sm')} ${g.t[m.hi]}
-            <span style="color:var(--t3);font-weight:400">vs</span>
-            ${g.t[m.ai]} ${fl(g.t[m.ai],'fl fl-sm')}
+
+      let itHtml='';
+      if(m.isKO){
+        // KO match rendering
+        const live=m.st2==='live';
+        itHtml=`
+          <div><div class="ud">${d}</div><div class="um">${MON[parseInt(mo)-1]}</div><div class="ut">${lt(m.ph)}</div></div>
+          <div style="min-width:0">
+            <div style="font-weight:600;font-size:.84rem;display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">
+              ${fl(m.h,'fl fl-sm')} ${m.h}
+              <span style="color:var(--t3);font-weight:400">vs</span>
+              ${m.a} ${fl(m.a,'fl fl-sm')}
+            </div>
+            <div style="font-size:.66rem;color:var(--t2);margin-top:.1rem">${m.city} · ${m.round}</div>
+            <div style="margin-top:.28rem;display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+              ${stMap[m.st2]||''}
+            </div>
           </div>
-          <div style="font-size:.66rem;color:var(--t2);margin-top:.1rem">${m.city} · Group ${m.g}</div>
-          <div style="margin-top:.28rem;display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
-            ${stMap[m.st2]||''}
-            ${mn&&live?`<span style="font-size:.6rem;color:var(--red);font-weight:700">${mn}'</span>`:''}
-            <span style="font-size:.66rem;color:var(--gold)">🔮 ${p.s[0]}–${p.s[1]}</span>
-            ${s?`<span style="font-size:.66rem;color:${live?'var(--red)':'var(--green)'};font-weight:700">${live?'● ':'⚽ '}${s[0]}–${s[1]}</span>`:''}
+          <div class="ub">${m.round}</div>`;
+      } else {
+        // Group stage match rendering
+        const g=G[m.g],s=sc(m.id),p=PRED[m.id],live=isLive(m.id);
+        const mn=mMin(m.id);
+        itHtml=`
+          <div><div class="ud">${d}</div><div class="um">${MON[parseInt(mo)-1]}</div><div class="ut">${m.t}</div></div>
+          <div style="min-width:0">
+            <div style="font-weight:600;font-size:.84rem;display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">
+              ${fl(g.t[m.hi],'fl fl-sm')} ${g.t[m.hi]}
+              <span style="color:var(--t3);font-weight:400">vs</span>
+              ${g.t[m.ai]} ${fl(g.t[m.ai],'fl fl-sm')}
+            </div>
+            <div style="font-size:.66rem;color:var(--t2);margin-top:.1rem">${m.city} · Group ${m.g}</div>
+            <div style="margin-top:.28rem;display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+              ${stMap[m.st2]||''}
+              ${mn&&live?`<span style="font-size:.6rem;color:var(--red);font-weight:700">${mn}'</span>`:''}
+              <span style="font-size:.66rem;color:var(--gold)">🔮 ${p.s[0]}–${p.s[1]}</span>
+              ${s?`<span style="font-size:.66rem;color:${live?'var(--red)':'var(--green)'};font-weight:700">${live?'● ':'⚽ '}${s[0]}–${s[1]}</span>`:''}
+            </div>
+            ${live?`<div style="width:100%;height:2px;background:var(--bdr2);border-radius:2px;margin-top:.35rem;overflow:hidden"><div style="height:100%;width:${Math.min(100,Math.round((Math.min(mn||0,90)/90)*100))}%;background:var(--red)"></div></div>`:''}
           </div>
-          ${live?`<div style="width:100%;height:2px;background:var(--bdr2);border-radius:2px;margin-top:.35rem;overflow:hidden"><div style="height:100%;width:${Math.min(100,Math.round((Math.min(mn||0,90)/90)*100))}%;background:var(--red)"></div></div>`:''}
-        </div>
-        <div class="ub">Gr.${m.g}</div>`;
+          <div class="ub">Gr.${m.g}</div>`;
+      }
+
+      const it=document.createElement('div');it.className='ui'+(m.st2==='live'?' islive':'');
+      it.innerHTML=itHtml;
       c.appendChild(it);
     });
   });
@@ -631,9 +700,9 @@ function RScorers(){
 }
 
 // ══ KNOCKOUT ══
-function mkM(h,a,date,label){
+function mkM(h,a,date,label,time){
   const ts=n=>n?`<div style="display:flex;align-items:center;gap:.3rem">${fl(n,'fl fl-sm')}<span style="font-size:.66rem;font-weight:600">${n}</span></div>`:`<span style="font-size:.58rem;color:var(--t3);font-style:italic">TBD</span>`;
-  return`<div class="km"><div class="kt">${ts(h)}</div><div class="kt">${ts(a)}</div><div class="kmeta"><span style="font-size:.52rem;color:var(--t3)">${label}</span><span style="font-size:.52rem;color:var(--t3)">${date}</span></div></div>`;
+  return`<div class="km"><div class="kt">${ts(h)}</div><div class="kt">${ts(a)}</div><div class="kmeta"><span style="font-size:.52rem;color:var(--t3)">${label}</span><span style="font-size:.52rem;color:var(--t3)">${date}${time?' · '+time:''}</span></div></div>`;
 }
 
 function RK(){
@@ -641,27 +710,27 @@ function RK(){
 
   // ── Round of 32 — confirmed fixtures ──
   const r32=[
-    {h:'South Africa', a:'Canada',             date:'Jun 28',label:'M73'},
-    {h:'Germany',      a:'Paraguay',            date:'Jun 29',label:'M75'},
-    {h:'Brazil',       a:'Japan',               date:'Jun 29',label:'M74'},
-    {h:'Netherlands',  a:'Morocco',             date:'Jun 29',label:'M76'},
-    {h:'Ivory Coast',  a:'Norway',              date:'Jun 30',label:'M77'},
-    {h:'France',       a:'Sweden',              date:'Jun 30',label:'M78'},
-    {h:'Mexico',       a:'Ecuador',             date:'Jun 30',label:'M79'},
-    {h:'England',      a:'DR Congo',            date:'Jul 1', label:'M80'},
-    {h:'Belgium',      a:'Senegal',             date:'Jul 1', label:'M81'},
-    {h:'USA',          a:'Bosnia-Herzegovina',  date:'Jul 1', label:'M82'},
-    {h:'Spain',        a:'Austria',             date:'Jul 2', label:'M83'},
-    {h:'Switzerland',  a:'Algeria',             date:'Jul 2', label:'M84'},
-    {h:'Portugal',     a:'Croatia',             date:'Jul 2', label:'M85'},
-    {h:'Argentina',    a:'Cape Verde',          date:'Jul 3', label:'M86'},
-    {h:'Colombia',     a:'Ghana',               date:'Jul 3', label:'M87'},
-    {h:'Australia',    a:'Egypt',               date:'Jul 3', label:'M88'},
+    {h:'South Africa', a:'Canada',             date:'Jun 28',time:'22:00',label:'M73'},
+    {h:'Germany',      a:'Paraguay',            date:'Jun 29',time:'23:30',label:'M75'},
+    {h:'Brazil',       a:'Japan',               date:'Jun 29',time:'20:00',label:'M74'},
+    {h:'Netherlands',  a:'Morocco',             date:'Jun 29',time:'03:00',label:'M76'},
+    {h:'Ivory Coast',  a:'Norway',              date:'Jun 30',time:'20:00',label:'M77'},
+    {h:'France',       a:'Sweden',              date:'Jun 30',time:'00:00',label:'M78'},
+    {h:'Mexico',       a:'Ecuador',             date:'Jun 30',time:'03:00',label:'M79'},
+    {h:'England',      a:'DR Congo',            date:'Jul 1', time:'19:00',label:'M80'},
+    {h:'Belgium',      a:'Senegal',             date:'Jul 1', time:'20:00',label:'M81'},
+    {h:'USA',          a:'Bosnia-Herzegovina',  date:'Jul 1', time:'02:00',label:'M82'},
+    {h:'Spain',        a:'Austria',             date:'Jul 2', time:'22:00',label:'M83'},
+    {h:'Switzerland',  a:'Algeria',             date:'Jul 2', time:'01:00',label:'M84'},
+    {h:'Portugal',     a:'Croatia',             date:'Jul 2', time:'01:00',label:'M85'},
+    {h:'Argentina',    a:'Cape Verde',          date:'Jul 3', time:'00:00',label:'M86'},
+    {h:'Colombia',     a:'Ghana',               date:'Jul 3', time:'03:30',label:'M87'},
+    {h:'Australia',    a:'Egypt',               date:'Jul 3', time:'21:00',label:'M88'},
   ];
 
   const r32col=document.createElement('div');r32col.className='ro';
   r32col.innerHTML='<div class="rt">Round of 32</div>';
-  r32.forEach(m=>r32col.innerHTML+=mkM(m.h,m.a,m.date,m.label));
+  r32.forEach(m=>r32col.innerHTML+=mkM(m.h,m.a,m.date,m.label,m.time));
   c.appendChild(r32col);
 
   // ── Later rounds TBD ──
