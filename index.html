@@ -743,22 +743,20 @@ function mkM(h,a,date,label,time,matchId,city){
   const s=matchId?sc(matchId):null;
   const live=matchId?isLive(matchId):false;
   const mn=matchId?mMin(matchId):null;
-  const hScore=s?s[0]:null;
-  const aScore=s?s[1]:null;
 
   const ts=(n,score)=>{
     if(!n) return`<span style="font-size:.58rem;color:var(--t3);font-style:italic">TBD</span>`;
-    const bold=s&&((score===hScore&&hScore>aScore)||(score===aScore&&aScore>hScore));
+    const winner=s&&score!==null&&((score===s[0]&&s[0]>s[1])||(score===s[1]&&s[1]>s[0]));
     return`<div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-      <div style="display:flex;align-items:center;gap:.3rem">${fl(n,'fl fl-sm')}<span style="font-size:.66rem;font-weight:${bold?800:500}">${n}</span></div>
-      ${score!==null?`<span style="font-size:.8rem;font-weight:800;color:${live?'var(--red)':bold?'var(--text)':'var(--t2)'}">${score}</span>`:''}
+      <div style="display:flex;align-items:center;gap:.3rem">${fl(n,'fl fl-sm')}<span style="font-size:.66rem;font-weight:${winner?800:500}">${n}</span></div>
+      ${score!==null?`<span style="font-size:.8rem;font-weight:800;color:${live?'var(--red)':winner?'var(--text)':'var(--t2)'}">${score}</span>`:''}
     </div>`;
   };
 
   let statusHtml='';
   if(live){
     const pct=mn?Math.min(100,Math.round(Math.min(mn,90)/90*100)):0;
-    statusHtml=`<div style="padding:.15rem .42rem;background:rgba(255,59,48,.08);border-top:1px solid var(--border);display:flex;align-items:center;gap:.4rem">
+    statusHtml=`<div style="padding:.15rem .42rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:.4rem">
       <span style="font-size:.58rem;color:var(--red);font-weight:700;animation:blink 1.2s infinite">● ${mn?mn+"'":'Live'}</span>
       <div style="flex:1;height:2px;background:var(--bdr2);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--red)"></div></div>
     </div>`;
@@ -771,8 +769,8 @@ function mkM(h,a,date,label,time,matchId,city){
   const borderStyle=live?'border-color:rgba(255,59,48,.5);':'';
   const metaInfo=[label,time,city].filter(Boolean).join(' · ');
   return`<div class="km" style="${borderStyle}">
-    <div class="kt">${ts(h,hScore)}</div>
-    <div class="kt">${ts(a,aScore)}</div>
+    <div class="kt">${ts(h, s?s[0]:null)}</div>
+    <div class="kt">${ts(a, s?s[1]:null)}</div>
     ${statusHtml}
     <div class="kmeta"><span style="font-size:.5rem;color:var(--t3)">${metaInfo}</span></div>
   </div>`;
