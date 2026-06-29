@@ -742,33 +742,30 @@ function RScorers(){
 function mkM(h,a,date,label,time,matchId,city){
   const ts=n=>n?`<div style="display:flex;align-items:center;gap:.3rem">${fl(n,'fl fl-sm')}<span style="font-size:.66rem;font-weight:600">${n}</span></div>`:`<span style="font-size:.58rem;color:var(--t3);font-style:italic">TBD</span>`;
 
-  // Score & live status from API
-  let scoreHtml='', liveClass='';
-  if(matchId){
-    const s=sc(matchId);
-    const live=isLive(matchId);
-    const mn=mMin(matchId);
-    if(live){
-      liveClass=' style="border-color:rgba(255,59,48,.5)"';
-      const pct=mn?Math.min(100,Math.round(Math.min(mn,90)/90*100)):0;
-      scoreHtml=`<div style="display:flex;align-items:center;justify-content:space-between;padding:.2rem .42rem;background:rgba(255,59,48,.08);border-top:1px solid var(--border)">
-        <span style="font-size:.6rem;color:var(--red);font-weight:700;animation:blink 1.2s infinite">● ${mn?mn+"'":'Live'}</span>
-        <span style="font-size:.75rem;font-weight:800;color:var(--red)">${s?s[0]+' – '+s[1]:'0 – 0'}</span>
-      </div>
-      <div style="height:2px;background:var(--bdr2);overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--red)"></div></div>`;
-    } else if(s){
-      const winner0=s[0]>s[1],winner1=s[1]>s[0];
-      scoreHtml=`<div style="display:flex;align-items:center;justify-content:space-between;padding:.2rem .42rem;background:var(--gd);border-top:1px solid var(--border)">
-        <span style="font-size:.55rem;color:var(--green);font-weight:700">✓ FT</span>
-        <span style="font-size:.75rem;font-weight:800;color:var(--green)">${s[0]} – ${s[1]}</span>
-      </div>`;
-    }
+  const s=matchId?sc(matchId):null;
+  const live=matchId?isLive(matchId):false;
+  const mn=matchId?mMin(matchId):null;
+
+  let scoreHtml='';
+  if(live){
+    const pct=mn?Math.min(100,Math.round(Math.min(mn,90)/90*100)):0;
+    scoreHtml=`<div style="display:flex;align-items:center;justify-content:space-between;padding:.2rem .42rem;background:rgba(255,59,48,.08);border-top:1px solid var(--border)">
+      <span style="font-size:.6rem;color:var(--red);font-weight:700;animation:blink 1.2s infinite">● ${mn?mn+"'":'Live'}</span>
+      <span style="font-size:.75rem;font-weight:800;color:var(--red)">${s?s[0]+' – '+s[1]:'0 – 0'}</span>
+    </div>
+    <div style="height:2px;background:var(--bdr2);overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--red)"></div></div>`;
+  } else if(s){
+    scoreHtml=`<div style="display:flex;align-items:center;justify-content:space-between;padding:.2rem .42rem;background:var(--gd);border-top:1px solid var(--border)">
+      <span style="font-size:.55rem;color:var(--green);font-weight:700">✓ FT</span>
+      <span style="font-size:.75rem;font-weight:800;color:var(--green)">${s[0]} – ${s[1]}</span>
+    </div>`;
   }
 
+  const borderStyle=live?'border-color:rgba(255,59,48,.5);':'';
   const metaInfo=[label,time,city].filter(Boolean).join(' · ');
-  return`<div class="km"${liveClass}>
-    <div class="kt" style="${matchId&&sc(matchId)&&sc(matchId)[0]>sc(matchId)[1]?'opacity:1':''}'">${ts(h)}</div>
-    <div class="kt" style="${matchId&&sc(matchId)&&sc(matchId)[1]>sc(matchId)[0]?'opacity:1':''}'">${ts(a)}</div>
+  return`<div class="km" style="${borderStyle}">
+    <div class="kt">${ts(h)}</div>
+    <div class="kt">${ts(a)}</div>
     ${scoreHtml}
     <div class="kmeta"><span style="font-size:.5rem;color:var(--t3)">${metaInfo}</span></div>
   </div>`;
