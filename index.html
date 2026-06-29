@@ -751,7 +751,11 @@ function mkM(h,a,date,label,time,matchId,city){
 
   const ts=(n,score)=>{
     if(!n) return`<span style="font-size:.58rem;color:var(--t3);font-style:italic">TBD</span>`;
-    const winner=s&&score!==null&&((score===s[0]&&s[0]>s[1])||(score===s[1]&&s[1]>s[0]));
+    const isPending=n.includes(' / ');
+    const winner=!isPending&&s&&score!==null&&((score===s[0]&&s[0]>s[1])||(score===s[1]&&s[1]>s[0]));
+    if(isPending) return`<div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+      <span style="font-size:.58rem;color:var(--t3)">${n}</span>
+    </div>`;
     return`<div style="display:flex;align-items:center;justify-content:space-between;width:100%">
       <div style="display:flex;align-items:center;gap:.3rem">${fl(n,'fl fl-sm')}<span style="font-size:.66rem;font-weight:${winner?800:500}">${n}</span></div>
       ${score!==null?`<span style="font-size:.8rem;font-weight:800;color:${live?'var(--red)':winner?'var(--text)':'var(--t2)'}">${score}</span>`:''}
@@ -813,12 +817,18 @@ function RK(){
   function resolveKO(label){
     if(!label) return null;
     if(label.startsWith('W')){
-      const winner=koWinner(label.replace('W','M'));
-      return winner||null;
+      const matchId=label.replace('W','M');
+      const winner=koWinner(matchId);
+      if(winner) return winner;
+      // Not yet played — show both teams
+      const m=KO_MATCHES.find(x=>x.id===matchId);
+      if(m) return `${m.h} / ${m.a}`;
+      return null;
     }
     if(label.startsWith('L')){
-      const s=sc(label.replace('L','M'));
-      const m=KO_MATCHES.find(x=>x.id===label.replace('L','M'));
+      const matchId=label.replace('L','M');
+      const s=sc(matchId);
+      const m=KO_MATCHES.find(x=>x.id===matchId);
       if(!s||!m) return null;
       if(s[0]<s[1]) return m.h;
       if(s[1]<s[0]) return m.a;
