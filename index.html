@@ -326,28 +326,60 @@ const MR=[
 ];
 
 // ══ KO MATCHES (phase finale) ══
-// ph = heure Paris (UTC+2 en été)
+// ══ KO MATCHES (phase finale — horaires officiels FIFA, convertis en heure Paris UTC+2) ══
 const KO_MATCHES=[
   // Round of 32
-  {id:'R32-1', date:'28/06',city:'Inglewood',   h:'South Africa',  a:'Canada',            ph:21, round:'R32'},
-  {id:'R32-2', date:'29/06',city:'Houston',      h:'Brazil',        a:'Japan',             ph:19, round:'R32'},
-  {id:'R32-3', date:'29/06',city:'Boston',       h:'Germany',       a:'Paraguay',          ph:22, round:'R32'},
-  {id:'R32-4', date:'29/06',city:'Monterrey',    h:'Netherlands',   a:'Morocco',           ph:3,  round:'R32'},
-  {id:'R32-5', date:'30/06',city:'Arlington',    h:'Ivory Coast',   a:'Norway',            ph:19, round:'R32'},
-  {id:'R32-6', date:'30/06',city:'E.Rutherford', h:'France',        a:'Sweden',            ph:23, round:'R32'},
-  {id:'R32-7', date:'30/06',city:'Mexico City',  h:'Mexico',        a:'Ecuador',           ph:3,  round:'R32'},
-  {id:'R32-8', date:'01/07',city:'Atlanta',      h:'England',       a:'DR Congo',          ph:18, round:'R32'},
-  {id:'R32-9', date:'01/07',city:'Seattle',      h:'Belgium',       a:'Senegal',           ph:19, round:'R32'},
-  {id:'R32-10',date:'01/07',city:'Santa Clara',  h:'USA',           a:'Bosnia-Herzegovina',ph:2,  round:'R32'},
-  {id:'R32-11',date:'02/07',city:'Inglewood',    h:'Spain',         a:'Austria',           ph:21, round:'R32'},
-  {id:'R32-12',date:'02/07',city:'Vancouver',    h:'Switzerland',   a:'Algeria',           ph:1,  round:'R32'},
-  {id:'R32-13',date:'02/07',city:'Toronto',      h:'Portugal',      a:'Croatia',           ph:1,  round:'R32'},
-  {id:'R32-14',date:'03/07',city:'Arlington',    h:'Australia',     a:'Egypt',             ph:20, round:'R32'},
-  {id:'R32-15',date:'03/07',city:'Miami',        h:'Argentina',     a:'Cape Verde',        ph:0,  round:'R32'},
-  {id:'R32-16',date:'03/07',city:'Kansas City',  h:'Colombia',      a:'Ghana',             ph:3,  round:'R32'},
+  {id:"M73",date:"28/06",city:"Inglewood",   h:"South Africa",      a:"Canada",             ph:21,pm:0, round:"R32",label:"M73"},
+  {id:"M76",date:"29/06",city:"Houston",     h:"Brazil",            a:"Japan",              ph:19,pm:0, round:"R32",label:"M76"},
+  {id:"M74",date:"29/06",city:"Boston",      h:"Germany",           a:"Paraguay",           ph:22,pm:30,round:"R32",label:"M74"},
+  {id:"M75",date:"29/06",city:"Monterrey",   h:"Netherlands",       a:"Morocco",            ph:3, pm:0, round:"R32",label:"M75"},
+  {id:"M78",date:"30/06",city:"Dallas",      h:"Ivory Coast",       a:"Norway",             ph:19,pm:0, round:"R32",label:"M78"},
+  {id:"M77",date:"30/06",city:"E.Rutherford",h:"France",            a:"Sweden",             ph:23,pm:0, round:"R32",label:"M77"},
+  {id:"M79",date:"30/06",city:"Mexico City", h:"Mexico",            a:"Ecuador",            ph:3, pm:0, round:"R32",label:"M79"},
+  {id:"M80",date:"01/07",city:"Atlanta",     h:"England",           a:"DR Congo",           ph:18,pm:0, round:"R32",label:"M80"},
+  {id:"M82",date:"01/07",city:"Seattle",     h:"Belgium",           a:"Senegal",            ph:22,pm:0, round:"R32",label:"M82"},
+  {id:"M81",date:"01/07",city:"Santa Clara", h:"USA",               a:"Bosnia-Herzegovina", ph:2, pm:0, round:"R32",label:"M81"},
+  {id:"M84",date:"02/07",city:"Inglewood",   h:"Spain",             a:"Austria",            ph:21,pm:0, round:"R32",label:"M84"},
+  {id:"M83",date:"02/07",city:"Toronto",     h:"Portugal",          a:"Croatia",            ph:1, pm:0, round:"R32",label:"M83"},
+  {id:"M85",date:"02/07",city:"Vancouver",   h:"Switzerland",       a:"Algeria",            ph:5, pm:0, round:"R32",label:"M85"},
+  {id:"M88",date:"03/07",city:"Dallas",      h:"Australia",         a:"Egypt",              ph:20,pm:0, round:"R32",label:"M88"},
+  {id:"M86",date:"03/07",city:"Miami",       h:"Argentina",         a:"Cape Verde",         ph:0, pm:0, round:"R32",label:"M86"},
+  {id:"M87",date:"03/07",city:"Kansas City", h:"Colombia",          a:"Ghana",              ph:3, pm:30,round:"R32",label:"M87"},
+  // Round of 16
+  {id:"M90",date:"04/07",city:"Houston",      h:"W73",a:"W75", ph:19,pm:0, round:"R16",label:"M90"},
+  {id:"M89",date:"04/07",city:"Philadelphia", h:"W74",a:"W77", ph:23,pm:0, round:"R16",label:"M89"},
+  {id:"M91",date:"05/07",city:"E.Rutherford", h:"W76",a:"W78", ph:22,pm:0, round:"R16",label:"M91"},
+  {id:"M92",date:"05/07",city:"Mexico City",  h:"W79",a:"W80", ph:2, pm:0, round:"R16",label:"M92"},
+  {id:"M93",date:"06/07",city:"Dallas",       h:"W83",a:"W84", ph:21,pm:0, round:"R16",label:"M93"},
+  {id:"M94",date:"06/07",city:"Seattle",      h:"W81",a:"W82", ph:2, pm:0, round:"R16",label:"M94"},
+  {id:"M95",date:"07/07",city:"Atlanta",      h:"W86",a:"W88", ph:18,pm:0, round:"R16",label:"M95"},
+  {id:"M96",date:"07/07",city:"Vancouver",    h:"W85",a:"W87", ph:22,pm:0, round:"R16",label:"M96"},
+  // Quarter-finals
+  {id:"M97", date:"09/07",city:"Boston",      h:"W89",a:"W90",  ph:22,pm:0,round:"QF",label:"M97"},
+  {id:"M98", date:"10/07",city:"Inglewood",   h:"W93",a:"W94",  ph:21,pm:0,round:"QF",label:"M98"},
+  {id:"M99", date:"11/07",city:"Miami",       h:"W91",a:"W92",  ph:23,pm:0,round:"QF",label:"M99"},
+  {id:"M100",date:"11/07",city:"Kansas City", h:"W95",a:"W96",  ph:3, pm:0,round:"QF",label:"M100"},
+  // Semi-finals
+  {id:"M101",date:"14/07",city:"Dallas",      h:"W97",a:"W98",  ph:21,pm:0,round:"SF",label:"M101"},
+  {id:"M102",date:"15/07",city:"Atlanta",     h:"W99",a:"W100", ph:21,pm:0,round:"SF",label:"M102"},
+  // Bronze & Final
+  {id:"M103",date:"18/07",city:"Miami",       h:"L101",a:"L102",ph:23,pm:0,round:"3rd",  label:"M103"},
+  {id:"M104",date:"19/07",city:"E.Rutherford",h:"W101",a:"W102",ph:21,pm:0,round:"Final",label:"M104"},
 ];
 const PO=2;
-function lt(ph){const lo=-(new Date().getTimezoneOffset()/60);return String(((ph+(lo-PO))+24)%24).padStart(2,'0')+':00'}
+function lt(ph,pm=0){
+  const lo=-(new Date().getTimezoneOffset()/60);
+  const localH=((ph+(lo-PO))+24)%24;
+  return String(Math.floor(localH)).padStart(2,'0')+':'+String(pm).padStart(2,'0');
+}
+function pd(d,ph,pm=0){
+  const[day,mo]=d.split('/').map(Number);
+  const lo=-(new Date().getTimezoneOffset()/60);
+  const utcH=(ph-2+24)%24;
+  const localH=(utcH+lo+24)%24;
+  const rollover=(utcH+lo)>=24?1:(utcH+lo)<0?-1:0;
+  return new Date(2026,mo-1,day+rollover,localH,pm,0);
+}
 try{document.getElementById('tz').textContent=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){}
 setInterval(()=>{const e=document.getElementById('clock');if(e)e.textContent='🕐 '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})},1000);
 
@@ -576,12 +608,12 @@ let uf='all';
 function UF(f,btn){uf=f;document.querySelectorAll('#fb button').forEach(b=>b.classList.remove('act'));btn.classList.add('act');RU()}
 
 function koMatchStatus(m){
-  const matchTime=pd(m.date,m.ph);
+  const matchTime=pd(m.date,m.ph,m.pm||0);
   const now=new Date();
   const diff=matchTime-now;
-  if(diff>0&&diff<86400000) return'soon';
-  if(diff<=0&&diff>-10800000) return'live'; // within 3h of kickoff
-  if(diff<=-10800000) return'done';
+  if(diff>0&&diff<86400000*7) return'soon';
+  if(diff<=0&&diff>-7200000) return'live';  // within 2h of kickoff
+  if(diff<=-7200000) return'done';
   return'pending';
 }
 
@@ -642,7 +674,7 @@ function RU(){
         const koSt=koLive?'live':koScore?'done':m.st2;
         const live=koLive;
         itHtml=`
-          <div><div class="ud">${d}</div><div class="um">${MON[parseInt(mo)-1]}</div><div class="ut">${lt(m.ph)}</div></div>
+          <div><div class="ud">${d}</div><div class="um">${MON[parseInt(mo)-1]}</div><div class="ut">${lt(m.ph,m.pm||0)}</div></div>
           <div style="min-width:0">
             <div style="font-weight:600;font-size:.84rem;display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">
               ${fl(m.h,'fl fl-sm')} ${m.h}
