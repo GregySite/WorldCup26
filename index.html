@@ -779,29 +779,14 @@ function mkM(h,a,date,label,time,matchId,city){
 function RK(){
   const c=document.getElementById('br');c.innerHTML='';
 
-  // ── Round of 32 — confirmed fixtures ──
-  const r32=[
-    {h:'South Africa', a:'Canada',             date:'Jun 28',time:'22:00',label:'M73'},
-    {h:'Germany',      a:'Paraguay',            date:'Jun 29',time:'23:30',label:'M75'},
-    {h:'Brazil',       a:'Japan',               date:'Jun 29',time:'20:00',label:'M74'},
-    {h:'Netherlands',  a:'Morocco',             date:'Jun 29',time:'03:00',label:'M76'},
-    {h:'Ivory Coast',  a:'Norway',              date:'Jun 30',time:'20:00',label:'M77'},
-    {h:'France',       a:'Sweden',              date:'Jun 30',time:'00:00',label:'M78'},
-    {h:'Mexico',       a:'Ecuador',             date:'Jun 30',time:'03:00',label:'M79'},
-    {h:'England',      a:'DR Congo',            date:'Jul 1', time:'19:00',label:'M80'},
-    {h:'Belgium',      a:'Senegal',             date:'Jul 1', time:'20:00',label:'M81'},
-    {h:'USA',          a:'Bosnia-Herzegovina',  date:'Jul 1', time:'02:00',label:'M82'},
-    {h:'Spain',        a:'Austria',             date:'Jul 2', time:'22:00',label:'M83'},
-    {h:'Switzerland',  a:'Algeria',             date:'Jul 2', time:'01:00',label:'M84'},
-    {h:'Portugal',     a:'Croatia',             date:'Jul 2', time:'01:00',label:'M85'},
-    {h:'Argentina',    a:'Cape Verde',          date:'Jul 3', time:'00:00',label:'M86'},
-    {h:'Colombia',     a:'Ghana',               date:'Jul 3', time:'03:30',label:'M87'},
-    {h:'Australia',    a:'Egypt',               date:'Jul 3', time:'21:00',label:'M88'},
-  ];
-
+  // ── Round of 32 — use KO_MATCHES directly ──
+  const r32=KO_MATCHES.filter(m=>m.round==='R32');
   const r32col=document.createElement('div');r32col.className='ro';
   r32col.innerHTML='<div class="rt">Round of 32</div>';
-  r32.forEach(m=>r32col.innerHTML+=mkM(m.h,m.a,m.date,m.label,m.time,m.label,m.city));
+  r32.forEach(m=>{
+    const time=lt(m.ph,m.pm||0);
+    r32col.innerHTML+=mkM(m.h,m.a,m.date,m.label,time,m.label,m.city);
+  });
   c.appendChild(r32col);
 
   // ── Resolve KO match winner from API score ──
