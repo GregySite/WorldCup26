@@ -635,8 +635,12 @@ function RU(){
 
       let itHtml='';
       if(m.isKO){
-        // KO match rendering
-        const live=m.st2==='live';
+        // KO match — use API data if available
+        const koScore=sc(m.id);
+        const koLive=isLive(m.id);
+        const koMn=mMin(m.id);
+        const koSt=koLive?'live':koScore?'done':m.st2;
+        const live=koLive;
         itHtml=`
           <div><div class="ud">${d}</div><div class="um">${MON[parseInt(mo)-1]}</div><div class="ut">${lt(m.ph)}</div></div>
           <div style="min-width:0">
@@ -647,8 +651,12 @@ function RU(){
             </div>
             <div style="font-size:.66rem;color:var(--t2);margin-top:.1rem">${m.city} · ${m.round}</div>
             <div style="margin-top:.28rem;display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
-              ${stMap[m.st2]||''}
+              ${stMap[koSt]||''}
+              ${koMn&&koLive?`<span style="font-size:.6rem;color:var(--red);font-weight:700">${koMn}'</span>`:''}
+              ${(()=>{const hStr=STR[m.h]||75,aStr=STR[m.a]||75,p=pred(hStr,aStr);return`<span style="font-size:.66rem;color:var(--gold)">🔮 ${p[0]}–${p[1]}</span>`})()}
+              ${koScore?`<span style="font-size:.66rem;color:${koLive?'var(--red)':'var(--green)'};font-weight:700">${koLive?'● ':'⚽ '}${koScore[0]}–${koScore[1]}</span>`:''}
             </div>
+            ${koLive?`<div style="width:100%;height:2px;background:var(--bdr2);border-radius:2px;margin-top:.35rem;overflow:hidden"><div style="height:100%;width:${Math.min(100,Math.round((Math.min(koMn||0,90)/90)*100))}%;background:var(--red)"></div></div>`:''}
           </div>
           <div class="ub">${m.round}</div>`;
       } else {
