@@ -71,22 +71,22 @@ const LOOKUP = (() => {
 
   // ── Knockout stage matches ──
   const ko = [
-    ['R32-1', 'South Africa','Canada'],
-    ['R32-2', 'Brazil','Japan'],
-    ['R32-3', 'Germany','Paraguay'],
-    ['R32-4', 'Netherlands','Morocco'],
-    ['R32-5', 'Ivory Coast','Norway'],
-    ['R32-6', 'France','Sweden'],
-    ['R32-7', 'Mexico','Ecuador'],
-    ['R32-8', 'England','DR Congo'],
-    ['R32-9', 'Belgium','Senegal'],
-    ['R32-10','USA','Bosnia-Herzegovina'],
-    ['R32-11','Spain','Austria'],
-    ['R32-12','Switzerland','Algeria'],
-    ['R32-13','Portugal','Croatia'],
-    ['R32-14','Australia','Egypt'],
-    ['R32-15','Argentina','Cape Verde'],
-    ['R32-16','Colombia','Ghana'],
+    ['M73', 'South Africa','Canada'],
+    ['M76', 'Brazil','Japan'],
+    ['M74', 'Germany','Paraguay'],
+    ['M75', 'Netherlands','Morocco'],
+    ['M78', 'Ivory Coast','Norway'],
+    ['M77', 'France','Sweden'],
+    ['M79', 'Mexico','Ecuador'],
+    ['M80', 'England','DR Congo'],
+    ['M82', 'Belgium','Senegal'],
+    ['M81', 'USA','Bosnia-Herzegovina'],
+    ['M84', 'Spain','Austria'],
+    ['M83', 'Portugal','Croatia'],
+    ['M85', 'Switzerland','Algeria'],
+    ['M88', 'Australia','Egypt'],
+    ['M86', 'Argentina','Cape Verde'],
+    ['M87', 'Colombia','Ghana'],
   ];
   for (const [id,h,a] of ko) {
     map[`${h}|||${a}`] = { id, hi:true  };
