@@ -68,6 +68,31 @@ const LOOKUP = (() => {
     map[`${h}|||${a}`] = { id, hi:true  };
     map[`${a}|||${h}`] = { id, hi:false };
   }
+
+  // ── Knockout stage matches ──
+  const ko = [
+    ['R32-1', 'South Africa','Canada'],
+    ['R32-2', 'Brazil','Japan'],
+    ['R32-3', 'Germany','Paraguay'],
+    ['R32-4', 'Netherlands','Morocco'],
+    ['R32-5', 'Ivory Coast','Norway'],
+    ['R32-6', 'France','Sweden'],
+    ['R32-7', 'Mexico','Ecuador'],
+    ['R32-8', 'England','DR Congo'],
+    ['R32-9', 'Belgium','Senegal'],
+    ['R32-10','USA','Bosnia-Herzegovina'],
+    ['R32-11','Spain','Austria'],
+    ['R32-12','Switzerland','Algeria'],
+    ['R32-13','Portugal','Croatia'],
+    ['R32-14','Australia','Egypt'],
+    ['R32-15','Argentina','Cape Verde'],
+    ['R32-16','Colombia','Ghana'],
+  ];
+  for (const [id,h,a] of ko) {
+    map[`${h}|||${a}`] = { id, hi:true  };
+    map[`${a}|||${h}`] = { id, hi:false };
+  }
+
   return map;
 })();
 
