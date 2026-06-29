@@ -914,6 +914,7 @@ async function fetchScores(){
       prevHash=hash;RG();RS();
       if(document.getElementById('view-sched').classList.contains('active'))RU();
       if(document.getElementById('view-scorers').classList.contains('active'))RScorers();
+      if(document.getElementById('view-ko').classList.contains('active'))RK();
       (j.live||[]).forEach(id=>{const el=document.getElementById('b-'+id);if(el){el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),2000)}});
     }
   }catch(e){
