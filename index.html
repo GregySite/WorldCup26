@@ -773,17 +773,74 @@ function RK(){
   r32.forEach(m=>r32col.innerHTML+=mkM(m.h,m.a,m.date,m.label,m.time));
   c.appendChild(r32col);
 
-  // ── Later rounds TBD ──
-  [
-    {title:'Round of 16',   dates:['Jul 4','Jul 4','Jul 5','Jul 5','Jul 6','Jul 6','Jul 7','Jul 7']},
-    {title:'Quarter-finals',dates:['Jul 9','Jul 10','Jul 11','Jul 12']},
-    {title:'Semi-finals',   dates:['Jul 14','Jul 15']},
-    {title:'3rd place',     dates:['Jul 18']},
-    {title:'🏆 Final',      dates:['Jul 19']},
-  ].forEach(round=>{
+  // ── Resolve KO match winner from API score ──
+  // Returns team name of winner, or null if not yet played
+  function koWinner(matchId){
+    const s=sc(matchId);
+    if(!s) return null;
+    const m=KO_MATCHES.find(x=>x.id===matchId);
+    if(!m) return null;
+    if(s[0]>s[1]) return m.h;
+    if(s[1]>s[0]) return m.a;
+    return null; // draw → could go to ET/penalties, can't know yet
+  }
+
+  // Resolve team label like "W73" → actual team name
+  function resolveKO(label){
+    if(!label) return null;
+    if(label.startsWith('W')){
+      const winner=koWinner(label.replace('W','M'));
+      return winner||null;
+    }
+    if(label.startsWith('L')){
+      const s=sc(label.replace('L','M'));
+      const m=KO_MATCHES.find(x=>x.id===label.replace('L','M'));
+      if(!s||!m) return null;
+      if(s[0]<s[1]) return m.h;
+      if(s[1]<s[0]) return m.a;
+      return null;
+    }
+    return label; // actual team name
+  }
+
+  // ── Later rounds with dynamic winners ──
+  const laterRounds=[
+    {title:'Round of 16', matches:[
+      {h:'W73',a:'W75',date:'Jul 4', time:'20:00',label:'M90'},
+      {h:'W74',a:'W77',date:'Jul 4', time:'00:00',label:'M89'},
+      {h:'W76',a:'W78',date:'Jul 5', time:'23:00',label:'M91'},
+      {h:'W79',a:'W80',date:'Jul 5', time:'03:00',label:'M92'},
+      {h:'W83',a:'W84',date:'Jul 6', time:'22:00',label:'M93'},
+      {h:'W81',a:'W82',date:'Jul 6', time:'03:00',label:'M94'},
+      {h:'W86',a:'W88',date:'Jul 7', time:'19:00',label:'M95'},
+      {h:'W85',a:'W87',date:'Jul 7', time:'23:00',label:'M96'},
+    ]},
+    {title:'Quarter-finals',matches:[
+      {h:'W89',a:'W90', date:'Jul 9', time:'23:00',label:'M97'},
+      {h:'W93',a:'W94', date:'Jul 10',time:'22:00',label:'M98'},
+      {h:'W91',a:'W92', date:'Jul 11',time:'00:00',label:'M99'},
+      {h:'W95',a:'W96', date:'Jul 11',time:'04:00',label:'M100'},
+    ]},
+    {title:'Semi-finals',matches:[
+      {h:'W97',a:'W98', date:'Jul 14',time:'22:00',label:'M101'},
+      {h:'W99',a:'W100',date:'Jul 15',time:'22:00',label:'M102'},
+    ]},
+    {title:'3rd place',matches:[
+      {h:'L101',a:'L102',date:'Jul 18',time:'00:00',label:'M103'},
+    ]},
+    {title:'🏆 Final',matches:[
+      {h:'W101',a:'W102',date:'Jul 19',time:'22:00',label:'M104'},
+    ]},
+  ];
+
+  laterRounds.forEach(round=>{
     const col=document.createElement('div');col.className='ro';
     col.innerHTML=`<div class="rt">${round.title}</div>`;
-    round.dates.forEach(d=>col.innerHTML+=mkM(null,null,d,''));
+    round.matches.forEach(m=>{
+      const h=resolveKO(m.h);
+      const a=resolveKO(m.a);
+      col.innerHTML+=mkM(h,a,m.date,m.label,m.time);
+    });
     c.appendChild(col);
   });
 }
