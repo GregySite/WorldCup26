@@ -333,21 +333,21 @@ const MR=[
 // ══ KO MATCHES (phase finale — horaires officiels FIFA, Paris UTC+2) ══
 const KO_MATCHES=[
   // Round of 32
-  {id:"M73",date:"28/06",city:"Inglewood",   h:"South Africa",      a:"Canada",             ph:21,pm:0, round:"R32",label:"M73"},
-  {id:"M76",date:"29/06",city:"Houston",     h:"Brazil",            a:"Japan",              ph:19,pm:0, round:"R32",label:"M76"},
   {id:"M74",date:"29/06",city:"Boston",      h:"Germany",           a:"Paraguay",           ph:22,pm:30,round:"R32",label:"M74"},
-  {id:"M75",date:"30/06",city:"Monterrey",   h:"Netherlands",       a:"Morocco",            ph:3, pm:0, round:"R32",label:"M75"},
-  {id:"M78",date:"30/06",city:"Dallas",      h:"Ivory Coast",       a:"Norway",             ph:19,pm:0, round:"R32",label:"M78"},
   {id:"M77",date:"30/06",city:"E.Rutherford",h:"France",            a:"Sweden",             ph:23,pm:0, round:"R32",label:"M77"},
+  {id:"M73",date:"28/06",city:"Inglewood",   h:"South Africa",      a:"Canada",             ph:21,pm:0, round:"R32",label:"M73"},
+  {id:"M75",date:"30/06",city:"Monterrey",   h:"Netherlands",       a:"Morocco",            ph:3, pm:0, round:"R32",label:"M75"},
+  {id:"M76",date:"29/06",city:"Houston",     h:"Brazil",            a:"Japan",              ph:19,pm:0, round:"R32",label:"M76"},
+  {id:"M78",date:"30/06",city:"Dallas",      h:"Ivory Coast",       a:"Norway",             ph:19,pm:0, round:"R32",label:"M78"},
   {id:"M79",date:"01/07",city:"Mexico City", h:"Mexico",            a:"Ecuador",            ph:3, pm:0, round:"R32",label:"M79"},
   {id:"M80",date:"01/07",city:"Atlanta",     h:"England",           a:"DR Congo",           ph:18,pm:0, round:"R32",label:"M80"},
-  {id:"M82",date:"01/07",city:"Seattle",     h:"Belgium",           a:"Senegal",            ph:22,pm:0, round:"R32",label:"M82"},
-  {id:"M81",date:"02/07",city:"Santa Clara", h:"USA",               a:"Bosnia-Herzegovina", ph:2, pm:0, round:"R32",label:"M81"},
-  {id:"M84",date:"02/07",city:"Inglewood",   h:"Spain",             a:"Austria",            ph:21,pm:0, round:"R32",label:"M84"},
   {id:"M83",date:"03/07",city:"Toronto",     h:"Portugal",          a:"Croatia",            ph:1, pm:0, round:"R32",label:"M83"},
-  {id:"M85",date:"03/07",city:"Vancouver",   h:"Switzerland",       a:"Algeria",            ph:5, pm:0, round:"R32",label:"M85"},
-  {id:"M88",date:"03/07",city:"Dallas",      h:"Australia",         a:"Egypt",              ph:20,pm:0, round:"R32",label:"M88"},
+  {id:"M84",date:"02/07",city:"Inglewood",   h:"Spain",             a:"Austria",            ph:21,pm:0, round:"R32",label:"M84"},
+  {id:"M81",date:"02/07",city:"Santa Clara", h:"USA",               a:"Bosnia-Herzegovina", ph:2, pm:0, round:"R32",label:"M81"},
+  {id:"M82",date:"01/07",city:"Seattle",     h:"Belgium",           a:"Senegal",            ph:22,pm:0, round:"R32",label:"M82"},
   {id:"M86",date:"04/07",city:"Miami",       h:"Argentina",         a:"Cape Verde",         ph:0, pm:0, round:"R32",label:"M86"},
+  {id:"M88",date:"03/07",city:"Dallas",      h:"Australia",         a:"Egypt",              ph:20,pm:0, round:"R32",label:"M88"},
+  {id:"M85",date:"03/07",city:"Vancouver",   h:"Switzerland",       a:"Algeria",            ph:5, pm:0, round:"R32",label:"M85"},
   {id:"M87",date:"04/07",city:"Kansas City", h:"Colombia",          a:"Ghana",              ph:3, pm:30,round:"R32",label:"M87"},
   // Round of 16
   {id:"M90",date:"04/07",city:"Houston",      h:"Canada",a:"W75",  ph:19,pm:0, round:"R16",label:"M90"},
@@ -829,15 +829,16 @@ function RK(){
 
   // ── Later rounds with dynamic winners ──
   const laterRounds=[
+    // R16 ordered to match official FIFA bracket (M73→M90, M74+M77→M89, etc.)
     {title:'Round of 16', matches:[
-      {h:'Canada',a:'W75', date:'Jul 4', time:'20:00',label:'M90'},
-      {h:'W74',   a:'W77', date:'Jul 5', time:'00:00',label:'M89'},
-      {h:'W76',   a:'W78', date:'Jul 5', time:'23:00',label:'M91'},
-      {h:'W79',   a:'W80', date:'Jun 6', time:'03:00',label:'M92'},
-      {h:'W83',   a:'W84', date:'Jul 6', time:'22:00',label:'M93'},
-      {h:'W81',   a:'W82', date:'Jul 7', time:'03:00',label:'M94'},
-      {h:'W86',   a:'W88', date:'Jul 7', time:'19:00',label:'M95'},
-      {h:'W85',   a:'W87', date:'Jul 7', time:'23:00',label:'M96'},
+      {h:'W74',    a:'W77', date:'Jul 5', time:'00:00',label:'M89'}, // W74=Germany/Paraguay, W77=France/Sweden
+      {h:'Canada', a:'W75', date:'Jul 4', time:'20:00',label:'M90'}, // Canada=W73, W75=Netherlands/Morocco
+      {h:'W76',    a:'W78', date:'Jul 5', time:'23:00',label:'M91'}, // W76=Brazil/Japan, W78=IvoryCoast/Norway
+      {h:'W79',    a:'W80', date:'Jul 6', time:'03:00',label:'M92'}, // W79=Mexico/Ecuador, W80=England/DRCongo
+      {h:'W83',    a:'W84', date:'Jul 6', time:'22:00',label:'M93'}, // W83=Portugal/Croatia, W84=Spain/Austria
+      {h:'W81',    a:'W82', date:'Jul 7', time:'03:00',label:'M94'}, // W81=USA/Bosnia, W82=Belgium/Senegal
+      {h:'W86',    a:'W88', date:'Jul 7', time:'19:00',label:'M95'}, // W86=Argentina/CapeVerde, W88=Australia/Egypt
+      {h:'W85',    a:'W87', date:'Jul 7', time:'23:00',label:'M96'}, // W85=Switzerland/Algeria, W87=Colombia/Ghana
     ]},
     {title:'Quarter-finals',matches:[
       {h:'W89',a:'W90',  date:'Jul 9', time:'23:00',label:'M97'},
