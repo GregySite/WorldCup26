@@ -161,10 +161,11 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 
 /* KNOCKOUT */
 .ko{overflow-x:auto;padding-bottom:.5rem}
-.br{display:flex;min-width:860px}
-.ro{display:flex;flex-direction:column;justify-content:space-around;width:172px;padding:0 .35rem}
+.br{display:flex;min-width:1200px;align-items:flex-start}
+.ro{display:flex;flex-direction:column;width:185px;padding:0 .3rem;flex-shrink:0}
 .rt{font-family:'Barlow Condensed',sans-serif;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);text-align:center;padding:.4rem 0 .6rem;border-bottom:1px solid var(--border);margin-bottom:.7rem;font-weight:700}
-.km{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);margin-bottom:.35rem;overflow:hidden}
+.km{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);overflow:hidden}
+.km+.km{margin-top:0}
 .kt{display:flex;align-items:center;justify-content:space-between;padding:.28rem .42rem;border-bottom:1px solid var(--border)}
 .kt:last-of-type{border-bottom:none}
 .kmeta{background:var(--bg2);padding:.18rem .42rem;font-size:.54rem;color:var(--t3);display:flex;justify-content:space-between;border-top:1px solid var(--border)}
@@ -783,9 +784,12 @@ function RK(){
   const r32=KO_MATCHES.filter(m=>m.round==='R32');
   const r32col=document.createElement('div');r32col.className='ro';
   r32col.innerHTML='<div class="rt">Round of 32</div>';
-  r32.forEach(m=>{
+  r32.forEach((m,i)=>{
     const time=lt(m.ph,m.pm||0);
-    r32col.innerHTML+=mkM(m.h,m.a,m.date,m.label,time,m.label,m.city);
+    const div=document.createElement('div');
+    div.style.cssText=i>0?'margin-top:6px':'';
+    div.innerHTML=mkM(m.h,m.a,m.date,m.label,time,m.label,m.city);
+    r32col.appendChild(div);
   });
   c.appendChild(r32col);
 
@@ -849,16 +853,133 @@ function RK(){
     ]},
   ];
 
+  // ── Dynamic bracket positioning ──
+  // Position each round's matches centered between their R32 "parents"
+  // We use requestAnimationFrame to measure after DOM is rendered
+
   laterRounds.forEach(round=>{
     const col=document.createElement('div');col.className='ro';
     col.innerHTML=`<div class="rt">${round.title}</div>`;
+
     round.matches.forEach(m=>{
       const h=resolveKO(m.h);
       const a=resolveKO(m.a);
       const ko=KO_MATCHES.find(x=>x.label===m.label);
-      col.innerHTML+=mkM(h,a,m.date,m.label,m.time,m.label,ko?.city||'');
+      const div=document.createElement('div');
+      div.setAttribute('data-label',m.label);
+      div.innerHTML=mkM(h,a,m.date,m.label,m.time,m.label,ko?.city||'');
+      col.appendChild(div);
     });
     c.appendChild(col);
+  });
+
+  // After DOM renders, reposition each match to center between its parents
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      const cols=c.querySelectorAll('.ro');
+      const brRect=c.getBoundingClientRect();
+
+      // Build a map of label → center Y (relative to bracket top)
+      const centerOf={};
+      cols[0].querySelectorAll('.km').forEach((km,i)=>{
+        const r=km.getBoundingClientRect();
+        centerOf[`M${73+[0,5,3,2,7,6,8,4,9,10,11,12,13,15,14,99][i]}`]= // approx
+          r.top - brRect.top + r.height/2;
+      });
+
+      // Simpler: just measure by index in R32 column
+      const r32cards=[...cols[0].querySelectorAll('.km')];
+      const r32centers=r32cards.map(km=>{
+        const r=km.getBoundingClientRect();
+        return r.top - brRect.top + r.height/2;
+      });
+
+      // R16 labels in order they appear
+      const r16order=['M90','M89','M91','M92','M93','M94','M95','M96'];
+      // Each R16 match feeds from 2 consecutive R32 matches
+      // M90←M73+M75(idx 0,1), M89←M74+M77(idx 2,3), M91←M76+M78(idx 4,5)...
+      const r16parents=[[0,1],[2,3],[4,5],[6,7],[8,9],[10,11],[12,13],[14,15]];
+
+      if(cols[1]){
+        const r16cards=[...cols[1].querySelectorAll('[data-label]')];
+        let prevBottom=cols[1].getBoundingClientRect().top-brRect.top + 30; // after .rt
+        r16cards.forEach((div,i)=>{
+          const p=r16parents[i];
+          if(!p) return;
+          const targetCenter=(r32centers[p[0]]+r32centers[p[1]])/2;
+          const cardH=div.querySelector('.km')?.getBoundingClientRect().height||75;
+          const targetTop=targetCenter-cardH/2;
+          div.style.marginTop=Math.max(0,targetTop-prevBottom)+'px';
+          const r=div.getBoundingClientRect();
+          prevBottom=r.bottom-brRect.top+4;
+        });
+      }
+
+      // QF: each feeds from 2 consecutive R16
+      if(cols[2]){
+        const r16els=[...cols[1].querySelectorAll('[data-label]')];
+        const r16centersArr=r16els.map(el=>{
+          const km=el.querySelector('.km');
+          if(!km) return 0;
+          const r=km.getBoundingClientRect();
+          return r.top-brRect.top+r.height/2;
+        });
+        const qfCards=[...cols[2].querySelectorAll('[data-label]')];
+        const qfParents=[[0,1],[2,3],[4,5],[6,7]];
+        let prevBot=cols[2].getBoundingClientRect().top-brRect.top+30;
+        qfCards.forEach((div,i)=>{
+          const p=qfParents[i];
+          if(!p||!r16centersArr[p[0]]||!r16centersArr[p[1]]) return;
+          const tc=(r16centersArr[p[0]]+r16centersArr[p[1]])/2;
+          const cardH=div.querySelector('.km')?.getBoundingClientRect().height||75;
+          div.style.marginTop=Math.max(0,tc-cardH/2-prevBot)+'px';
+          const r=div.getBoundingClientRect();
+          prevBot=r.bottom-brRect.top+4;
+        });
+      }
+
+      // SF: each feeds from 2 consecutive QF
+      if(cols[3]){
+        const qfEls=[...cols[2].querySelectorAll('[data-label]')];
+        const qfCenters=qfEls.map(el=>{
+          const km=el.querySelector('.km');
+          if(!km) return 0;
+          const r=km.getBoundingClientRect();
+          return r.top-brRect.top+r.height/2;
+        });
+        const sfCards=[...cols[3].querySelectorAll('[data-label]')];
+        const sfParents=[[0,1],[2,3]];
+        let prevBot=cols[3].getBoundingClientRect().top-brRect.top+30;
+        sfCards.forEach((div,i)=>{
+          const p=sfParents[i];
+          if(!p||!qfCenters[p[0]]||!qfCenters[p[1]]) return;
+          const tc=(qfCenters[p[0]]+qfCenters[p[1]])/2;
+          const cardH=div.querySelector('.km')?.getBoundingClientRect().height||75;
+          div.style.marginTop=Math.max(0,tc-cardH/2-prevBot)+'px';
+          const r=div.getBoundingClientRect();
+          prevBot=r.bottom-brRect.top+4;
+        });
+      }
+
+      // Final + 3rd place: center between the 2 SF matches
+      const sfEls=cols[3]?[...cols[3].querySelectorAll('[data-label]')]:[];
+      const sfCenters=sfEls.map(el=>{
+        const km=el.querySelector('.km');
+        if(!km) return 0;
+        const r=km.getBoundingClientRect();
+        return r.top-brRect.top+r.height/2;
+      });
+      const midSF=sfCenters.length===2?(sfCenters[0]+sfCenters[1])/2:400;
+
+      [cols[4],cols[5]].forEach(col=>{
+        if(!col) return;
+        const div=col.querySelector('[data-label]');
+        if(!div) return;
+        const cardH=div.querySelector('.km')?.getBoundingClientRect().height||75;
+        const colTop=col.getBoundingClientRect().top-brRect.top+30;
+        div.style.marginTop=Math.max(0,midSF-cardH/2-colTop)+'px';
+      });
+    });
   });
 }
 
