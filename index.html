@@ -791,7 +791,7 @@ function RK(){
   // ── Round of 32 — use KO_MATCHES directly ──
   const r32=KO_MATCHES.filter(m=>m.round==='R32');
   const r32col=document.createElement('div');r32col.className='ro';
-  r32col.innerHTML='<div class="rt">Round of 32</div>';
+  r32col.innerHTML='<div class="rt">16</div>';
   r32.forEach((m,i)=>{
     const time=lt(m.ph,m.pm||0);
     const div=document.createElement('div');
@@ -840,7 +840,7 @@ function RK(){
   // ── Later rounds with dynamic winners ──
   const laterRounds=[
     // R16 ordered to match official FIFA bracket (M73→M90, M74+M77→M89, etc.)
-    {title:'Round of 16', matches:[
+    {title:'8', matches:[
       {h:'W74',    a:'W77', date:'Jul 5', time:'00:00',label:'M89'}, // W74=Germany/Paraguay, W77=France/Sweden
       {h:'Canada', a:'W75', date:'Jul 4', time:'20:00',label:'M90'}, // Canada=W73, W75=Netherlands/Morocco
       {h:'W76',    a:'W78', date:'Jul 5', time:'23:00',label:'M91'}, // W76=Brazil/Japan, W78=IvoryCoast/Norway
@@ -850,20 +850,20 @@ function RK(){
       {h:'W86',    a:'W88', date:'Jul 7', time:'19:00',label:'M95'}, // W86=Argentina/CapeVerde, W88=Australia/Egypt
       {h:'W85',    a:'W87', date:'Jul 7', time:'23:00',label:'M96'}, // W85=Switzerland/Algeria, W87=Colombia/Ghana
     ]},
-    {title:'Quarter-finals',matches:[
+    {title:'Quarter',matches:[
       {h:'W89',a:'W90',  date:'Jul 9', time:'23:00',label:'M97'},
       {h:'W93',a:'W94',  date:'Jul 10',time:'22:00',label:'M98'},
       {h:'W91',a:'W92',  date:'Jul 12',time:'00:00',label:'M99'},
       {h:'W95',a:'W96',  date:'Jul 12',time:'04:00',label:'M100'},
     ]},
-    {title:'Semi-finals',matches:[
+    {title:'Semi',matches:[
       {h:'W97',a:'W98',  date:'Jul 14',time:'22:00',label:'M101'},
       {h:'W99',a:'W100', date:'Jul 15',time:'22:00',label:'M102'},
     ]},
-    {title:'3rd place',matches:[
+    {title:'3rd',matches:[
       {h:'L101',a:'L102',date:'Jul 19',time:'00:00',label:'M103'},
     ]},
-    {title:'🏆 Final',matches:[
+    {title:'🏆',matches:[
       {h:'W101',a:'W102',date:'Jul 19',time:'22:00',label:'M104'},
     ]},
   ];
