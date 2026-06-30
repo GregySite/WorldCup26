@@ -244,7 +244,7 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 
 <div id="view-ko" class="view">
   <div class="sh">Knockout bracket</div>
-  <div class="ko"><div class="br" id="br"></div></div>
+  <div class="ko" style="position:relative"><div class="br" id="br"></div><svg id="bracket-lines" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1"></svg></div>
 </div>
 
 <div id="view-stats" class="view">
@@ -760,9 +760,9 @@ function mkM(h,a,date,label,time,matchId,city){
     if(isPending) return`<div style="display:flex;align-items:center;justify-content:space-between;width:100%">
       <span style="font-size:.58rem;color:var(--t3)">${n}</span>
     </div>`;
-    return`<div class="kt-team" data-team="${n}" style="display:flex;align-items:center;justify-content:space-between;width:100%;cursor:pointer">
-      <div style="display:flex;align-items:center;gap:.3rem">${fl(n,'fl fl-sm')}<span style="font-size:.66rem;font-weight:${winner?800:500}">${n}</span></div>
-      ${score!==null?`<span style="font-size:.8rem;font-weight:800;color:${live?'var(--red)':winner?'var(--text)':'var(--t2)'}">${score}</span>`:''}
+    return`<div class="kt-team" data-team="${n}" style="display:flex;align-items:center;justify-content:space-between;width:100%;${winner?'background:rgba(77,166,255,.08)':''}">
+      <div style="display:flex;align-items:center;gap:.3rem">${fl(n,'fl fl-sm')}<span style="font-size:.66rem;font-weight:${winner?800:500};color:${winner?'#4da6ff':'var(--text)'}">${n}</span></div>
+      ${score!==null?`<span style="font-size:.8rem;font-weight:800;color:${live?'var(--red)':winner?'#4da6ff':'var(--t2)'}">${score}</span>`:''}
     </div>`;
   };
 
@@ -788,6 +788,77 @@ function mkM(h,a,date,label,time,matchId,city){
     ${statusHtml}
     <div class="kmeta"><span style="font-size:.5rem;color:var(--t3)">${metaInfo}</span></div>
   </div>`;
+}
+
+// ══ BRACKET CONNECTING LINES ══
+function drawBracketLines(container, cols){
+  const svg=document.getElementById('bracket-lines');
+  if(!svg) return;
+  svg.innerHTML='';
+
+  const koRect=container.getBoundingClientRect();
+  // Size the SVG to match the actual scrollable bracket content
+  const fullWidth=container.scrollWidth;
+  const fullHeight=container.scrollHeight;
+  svg.setAttribute('width',fullWidth);
+  svg.setAttribute('height',fullHeight);
+  svg.style.width=fullWidth+'px';
+  svg.style.height=fullHeight+'px';
+
+  const ns='http://www.w3.org/2000/svg';
+
+  function centerOf(el){
+    const km=el.querySelector?.('.km')||el;
+    const r=km.getBoundingClientRect();
+    return {
+      rightX: r.right-koRect.left,
+      leftX: r.left-koRect.left,
+      y: r.top-koRect.top+r.height/2
+    };
+  }
+
+  function connect(fromEl,toEl){
+    if(!fromEl||!toEl) return;
+    const from=centerOf(fromEl);
+    const to=centerOf(toEl);
+    const midX=(from.rightX+to.leftX)/2;
+    const path=document.createElementNS(ns,'path');
+    // Right-angle bracket style: horizontal → vertical → horizontal
+    const d=`M${from.rightX},${from.y} H${midX} V${to.y} H${to.leftX}`;
+    path.setAttribute('d',d);
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke','rgba(90,122,98,.5)');
+    path.setAttribute('stroke-width','1.5');
+    svg.appendChild(path);
+  }
+
+  // R32 → R16 (pairs: 0-1, 2-3, 4-5...)
+  const r32cards=[...cols[0].querySelectorAll('.km')];
+  const r16cards=cols[1]?[...cols[1].querySelectorAll('[data-label]')]:[];
+  for(let i=0;i<r16cards.length;i++){
+    connect(r32cards[i*2], r16cards[i]);
+    connect(r32cards[i*2+1], r16cards[i]);
+  }
+
+  // R16 → QF
+  const qfCards=cols[2]?[...cols[2].querySelectorAll('[data-label]')]:[];
+  for(let i=0;i<qfCards.length;i++){
+    connect(r16cards[i*2], qfCards[i]);
+    connect(r16cards[i*2+1], qfCards[i]);
+  }
+
+  // QF → SF
+  const sfCards=cols[3]?[...cols[3].querySelectorAll('[data-label]')]:[];
+  for(let i=0;i<sfCards.length;i++){
+    connect(qfCards[i*2], sfCards[i]);
+    connect(qfCards[i*2+1], sfCards[i]);
+  }
+
+  // SF → Final (cols[4] now contains both Final and 3rd place; Final is first)
+  const finalCards=cols[4]?[...cols[4].querySelectorAll('[data-label]')]:[];
+  const finalCard=finalCards[0]||null; // M104 only, not M103 (3rd place)
+  if(sfCards[0]&&finalCard) connect(sfCards[0], finalCard);
+  if(sfCards[1]&&finalCard) connect(sfCards[1], finalCard);
 }
 
 function RK(){
@@ -877,11 +948,9 @@ function RK(){
       {h:'W97',a:'W98',  date:'Jul 14',time:'22:00',label:'M101'},
       {h:'W99',a:'W100', date:'Jul 15',time:'22:00',label:'M102'},
     ]},
-    {title:'3rd Place',matches:[
-      {h:'L101',a:'L102',date:'Jul 19',time:'00:00',label:'M103'},
-    ]},
     {title:'🏆 Final',matches:[
       {h:'W101',a:'W102',date:'Jul 19',time:'22:00',label:'M104'},
+      {h:'L101',a:'L102',date:'Jul 19',time:'00:00',label:'M103'},
     ]},
   ];
 
@@ -993,7 +1062,7 @@ function RK(){
         });
       }
 
-      // Final + 3rd place: center between the 2 SF matches
+      // Final column: Final match centered between the 2 SF matches, 3rd place placed right below it
       const sfEls=cols[3]?[...cols[3].querySelectorAll('[data-label]')]:[];
       const sfCenters=sfEls.map(el=>{
         const km=el.querySelector('.km');
@@ -1003,13 +1072,24 @@ function RK(){
       });
       const midSF=sfCenters.length===2?(sfCenters[0]+sfCenters[1])/2:400;
 
-      [cols[4],cols[5]].forEach(col=>{
-        if(!col) return;
-        const div=col.querySelector('[data-label]');
-        if(!div) return;
-        const cardH=div.querySelector('.km')?.getBoundingClientRect().height||75;
-        const colTop=col.getBoundingClientRect().top-brRect.top+30;
-        div.style.marginTop=Math.max(0,midSF-cardH/2-colTop)+'px';
+      if(cols[4]){
+        const finalDivs=[...cols[4].querySelectorAll('[data-label]')];
+        const finalDiv=finalDivs[0]; // M104 — the Final
+        const thirdDiv=finalDivs[1]; // M103 — 3rd place
+        if(finalDiv){
+          const cardH=finalDiv.querySelector('.km')?.getBoundingClientRect().height||75;
+          const colTop=cols[4].getBoundingClientRect().top-brRect.top+30;
+          finalDiv.style.marginTop=Math.max(0,midSF-cardH/2-colTop)+'px';
+        }
+        if(thirdDiv){
+          // Place directly below the Final, with a gap
+          thirdDiv.style.marginTop='24px';
+        }
+      }
+
+      // ── Draw connecting lines between rounds ──
+      requestAnimationFrame(()=>{
+        drawBracketLines(c, cols);
       });
     });
   });
