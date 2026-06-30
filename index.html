@@ -168,8 +168,11 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 .br{display:flex;min-width:1200px;align-items:flex-start}
 .ro{display:flex;flex-direction:column;width:185px;padding:0 .3rem;flex-shrink:0}
 .rt{font-family:'Barlow Condensed',sans-serif;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);text-align:center;padding:.4rem 0 .6rem;border-bottom:1px solid var(--border);margin-bottom:.7rem;font-weight:700}
-.km{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);overflow:hidden}
+.km{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);overflow:hidden;transition:box-shadow .2s,border-color .2s}
 .km+.km{margin-top:0}
+.kt-team:hover{background:rgba(255,214,0,.06)}
+.km.path-highlight{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.kt-team.team-highlight{background:rgba(255,214,0,.12)}
 .kt{display:flex;align-items:center;justify-content:space-between;padding:.28rem .42rem;border-bottom:1px solid var(--border)}
 .kt:last-of-type{border-bottom:none}
 .kmeta{background:var(--bg2);padding:.18rem .42rem;font-size:.54rem;color:var(--t3);display:flex;justify-content:space-between;border-top:1px solid var(--border)}
@@ -757,7 +760,7 @@ function mkM(h,a,date,label,time,matchId,city){
     if(isPending) return`<div style="display:flex;align-items:center;justify-content:space-between;width:100%">
       <span style="font-size:.58rem;color:var(--t3)">${n}</span>
     </div>`;
-    return`<div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+    return`<div class="kt-team" data-team="${n}" style="display:flex;align-items:center;justify-content:space-between;width:100%;cursor:pointer">
       <div style="display:flex;align-items:center;gap:.3rem">${fl(n,'fl fl-sm')}<span style="font-size:.66rem;font-weight:${winner?800:500}">${n}</span></div>
       ${score!==null?`<span style="font-size:.8rem;font-weight:800;color:${live?'var(--red)':winner?'var(--text)':'var(--t2)'}">${score}</span>`:''}
     </div>`;
@@ -1007,6 +1010,27 @@ function RK(){
         const cardH=div.querySelector('.km')?.getBoundingClientRect().height||75;
         const colTop=col.getBoundingClientRect().top-brRect.top+30;
         div.style.marginTop=Math.max(0,midSF-cardH/2-colTop)+'px';
+      });
+    });
+  });
+
+  // ── Team path highlight on click ──
+  // Click any team name to highlight every card it appears in across the bracket
+  c.querySelectorAll('.kt-team').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const team=el.getAttribute('data-team');
+      const alreadyActive=el.classList.contains('team-highlight');
+      // Clear all highlights first
+      c.querySelectorAll('.kt-team.team-highlight').forEach(x=>x.classList.remove('team-highlight'));
+      c.querySelectorAll('.km.path-highlight').forEach(x=>x.classList.remove('path-highlight'));
+      if(alreadyActive) return; // toggle off
+      // Highlight every occurrence of this team name across the whole bracket
+      c.querySelectorAll('.kt-team').forEach(x=>{
+        if(x.getAttribute('data-team')===team){
+          x.classList.add('team-highlight');
+          const km=x.closest('.km');
+          if(km) km.classList.add('path-highlight');
+        }
       });
     });
   });
