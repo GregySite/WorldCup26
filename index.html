@@ -817,7 +817,7 @@ function drawBracketLines(container, cols){
     };
   }
 
-  function connect(fromEl,toEl){
+  function connect(fromEl,toEl,matchId){
     if(!fromEl||!toEl) return;
     const from=centerOf(fromEl);
     const to=centerOf(toEl);
@@ -827,38 +827,52 @@ function drawBracketLines(container, cols){
     const d=`M${from.rightX},${from.y} H${midX} V${to.y} H${to.leftX}`;
     path.setAttribute('d',d);
     path.setAttribute('fill','none');
-    path.setAttribute('stroke','rgba(90,122,98,.5)');
-    path.setAttribute('stroke-width','1.5');
+
+    // Color the line blue if this match's winner is already decided
+    let decided=false;
+    if(matchId){
+      const s=sc(matchId);
+      if(s){
+        if(s[0]!==s[1]) decided=true;
+        else if(LIVE.pens?.[matchId]) decided=true; // tied but resolved via penalties
+      }
+    }
+    path.setAttribute('stroke', decided?'#4da6ff':'rgba(90,122,98,.5)');
+    path.setAttribute('stroke-width', decided?'2':'1.5');
     svg.appendChild(path);
   }
 
   // R32 → R16 (pairs: 0-1, 2-3, 4-5...)
-  const r32cards=[...cols[0].querySelectorAll('.km')];
+  const r32cards=[...cols[0].querySelectorAll('[data-label]')];
+  const r32ids=r32cards.map(el=>el.getAttribute('data-label'));
   const r16cards=cols[1]?[...cols[1].querySelectorAll('[data-label]')]:[];
   for(let i=0;i<r16cards.length;i++){
-    connect(r32cards[i*2], r16cards[i]);
-    connect(r32cards[i*2+1], r16cards[i]);
+    connect(r32cards[i*2],   r16cards[i], r32ids[i*2]);
+    connect(r32cards[i*2+1], r16cards[i], r32ids[i*2+1]);
   }
 
   // R16 → QF
+  const r16ids=r16cards.map(el=>el.getAttribute('data-label'));
   const qfCards=cols[2]?[...cols[2].querySelectorAll('[data-label]')]:[];
   for(let i=0;i<qfCards.length;i++){
-    connect(r16cards[i*2], qfCards[i]);
-    connect(r16cards[i*2+1], qfCards[i]);
+    connect(r16cards[i*2],   qfCards[i], r16ids[i*2]);
+    connect(r16cards[i*2+1], qfCards[i], r16ids[i*2+1]);
   }
 
   // QF → SF
+  const qfIds=qfCards.map(el=>el.getAttribute('data-label'));
   const sfCards=cols[3]?[...cols[3].querySelectorAll('[data-label]')]:[];
   for(let i=0;i<sfCards.length;i++){
-    connect(qfCards[i*2], sfCards[i]);
-    connect(qfCards[i*2+1], sfCards[i]);
+    connect(qfCards[i*2],   sfCards[i], qfIds[i*2]);
+    connect(qfCards[i*2+1], sfCards[i], qfIds[i*2+1]);
   }
 
   // SF → Final (cols[4] now contains both Final and 3rd place; Final is first)
+  const sfIds=sfCards.map(el=>el.getAttribute('data-label'));
   const finalCards=cols[4]?[...cols[4].querySelectorAll('[data-label]')]:[];
   const finalCard=finalCards[0]||null; // M104 only, not M103 (3rd place)
-  if(sfCards[0]&&finalCard) connect(sfCards[0], finalCard);
-  if(sfCards[1]&&finalCard) connect(sfCards[1], finalCard);
+  if(sfCards[0]&&finalCard) connect(sfCards[0], finalCard, sfIds[0]);
+  if(sfCards[1]&&finalCard) connect(sfCards[1], finalCard, sfIds[1]);
 }
 
 function RK(){
@@ -871,6 +885,7 @@ function RK(){
   r32.forEach((m,i)=>{
     const time=lt(m.ph,m.pm||0);
     const div=document.createElement('div');
+    div.setAttribute('data-label',m.label);
     div.style.cssText=i>0?'margin-top:6px':'';
     div.innerHTML=mkM(m.h,m.a,m.date,m.label,time,m.label,m.city);
     r32col.appendChild(div);
