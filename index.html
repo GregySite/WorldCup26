@@ -1014,17 +1014,17 @@ function RK(){
     });
   });
 
-  // ── Team path highlight on click ──
-  // Click any team name to highlight every card it appears in across the bracket
-  c.querySelectorAll('.kt-team').forEach(el=>{
-    el.addEventListener('click',()=>{
+  // ── Team path highlight on click (event delegation, attached once) ──
+  if(!c.dataset.highlightBound){
+    c.dataset.highlightBound='1';
+    c.addEventListener('click',(e)=>{
+      const el=e.target.closest('.kt-team');
+      if(!el) return;
       const team=el.getAttribute('data-team');
       const alreadyActive=el.classList.contains('team-highlight');
-      // Clear all highlights first
       c.querySelectorAll('.kt-team.team-highlight').forEach(x=>x.classList.remove('team-highlight'));
       c.querySelectorAll('.km.path-highlight').forEach(x=>x.classList.remove('path-highlight'));
-      if(alreadyActive) return; // toggle off
-      // Highlight every occurrence of this team name across the whole bracket
+      if(alreadyActive) return;
       c.querySelectorAll('.kt-team').forEach(x=>{
         if(x.getAttribute('data-team')===team){
           x.classList.add('team-highlight');
@@ -1033,7 +1033,7 @@ function RK(){
         }
       });
     });
-  });
+  }
 }
 
 // ══ STATS ══
