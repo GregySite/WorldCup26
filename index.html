@@ -410,7 +410,7 @@ MATCHES.forEach(m=>{
 });
 
 // ══ STATE ══
-let LIVE={matches:{},live:[],minutes:{},scorers:[]};
+let LIVE={matches:{},live:[],minutes:{},pens:{},scorers:[]};
 const sc=id=>LIVE.matches[id]??null;
 const isLive=id=>(LIVE.live||[]).includes(id);
 const mMin=id=>LIVE.minutes?.[id]??null;
@@ -748,6 +748,7 @@ function mkM(h,a,date,label,time,matchId,city){
   const s=matchId?sc(matchId):null;
   const live=matchId?isLive(matchId):false;
   const mn=matchId?mMin(matchId):null;
+  const pen=matchId?LIVE.pens?.[matchId]:null;
 
   const ts=(n,score)=>{
     if(!n) return`<span style="font-size:.58rem;color:var(--t3);font-style:italic">TBD</span>`;
@@ -770,8 +771,9 @@ function mkM(h,a,date,label,time,matchId,city){
       <div style="flex:1;height:2px;background:var(--bdr2);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--red)"></div></div>
     </div>`;
   } else if(s){
-    statusHtml=`<div style="padding:.12rem .42rem;border-top:1px solid var(--border)">
-      <span style="font-size:.55rem;color:var(--green);font-weight:700">✓ FT</span>
+    statusHtml=`<div style="padding:.12rem .42rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:.4rem">
+      <span style="font-size:.55rem;color:var(--green);font-weight:700">✓ FT${pen?' (pens)':''}</span>
+      ${pen?`<span style="font-size:.55rem;color:var(--gold);font-weight:700">⚽ ${pen[0]}–${pen[1]} pen.</span>`:''}
     </div>`;
   }
 
@@ -810,7 +812,13 @@ function RK(){
     if(!m) return null;
     if(s[0]>s[1]) return m.h;
     if(s[1]>s[0]) return m.a;
-    return null; // draw → could go to ET/penalties, can't know yet
+    // Tied on regular score — check penalty shootout
+    const pen=LIVE.pens?.[matchId];
+    if(pen){
+      if(pen[0]>pen[1]) return m.h;
+      if(pen[1]>pen[0]) return m.a;
+    }
+    return null; // still no winner known
   }
 
   // Resolve team label like "W73" → actual team name
@@ -832,6 +840,12 @@ function RK(){
       if(!s||!m) return null;
       if(s[0]<s[1]) return m.h;
       if(s[1]<s[0]) return m.a;
+      // Tied on regular score — loser determined by penalties
+      const pen=LIVE.pens?.[matchId];
+      if(pen){
+        if(pen[0]<pen[1]) return m.h;
+        if(pen[1]<pen[0]) return m.a;
+      }
       return null;
     }
     return label; // actual team name
@@ -1045,7 +1059,7 @@ async function fetchScores(){
     else if(done>0){pill.className='pill pill-ok';pill.textContent='✓ Live';msg.textContent=`${done} results loaded`;}
     else{pill.className='pill pill-ok';pill.textContent='✓ Connected';msg.textContent='No results yet';}
     upd.textContent='· '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    const hash=JSON.stringify({m:j.matches,l:j.live,s:j.scorers});
+    const hash=JSON.stringify({m:j.matches,l:j.live,s:j.scorers,p:j.pens});
     if(hash!==prevHash){
       prevHash=hash;RG();RS();
       if(document.getElementById('view-sched').classList.contains('active'))RU();
