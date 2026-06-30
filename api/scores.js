@@ -96,7 +96,7 @@ const LOOKUP = (() => {
   return map;
 })();
 
-function processMatch(m, scores, liveIds, minutes) {
+function processMatch(m, scores, liveIds, minutes, pens) {
   const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status);
   const isDone = m.status === 'FINISHED';
   if (!isLive && !isDone) return;
@@ -107,11 +107,11 @@ function processMatch(m, scores, liveIds, minutes) {
     return;
   }
 
-  // Get score — for 0-0 finished matches football-data returns null
-  let home = m.score?.fullTime?.home ?? m.score?.regularTime?.home;
-  let away = m.score?.fullTime?.away ?? m.score?.regularTime?.away;
+  // Get score — prefer regularTime (90min) for the main displayed score
+  // so knockout matches show the 90min result, not extra-time/penalty inflated numbers
+  let home = m.score?.regularTime?.home ?? m.score?.fullTime?.home;
+  let away = m.score?.regularTime?.away ?? m.score?.fullTime?.away;
 
-  // Only store score if we have real data OR match is confirmed finished
   if (home == null && isDone) home = 0;
   if (away == null && isDone) away = 0;
   if (home == null || away == null) { home = 0; away = 0; } // live with no goals yet
@@ -122,6 +122,15 @@ function processMatch(m, scores, liveIds, minutes) {
     if (!liveIds.includes(fm.id)) liveIds.push(fm.id);
     if (m.minute != null) minutes[fm.id] = m.minute + (m.injuryTime||0);
   }
+
+  // Penalty shootout info (knockout stage only)
+  if (m.score?.duration === 'PENALTY_SHOOTOUT' && m.score?.penalties) {
+    const ph = m.score.penalties.home;
+    const pa = m.score.penalties.away;
+    if (ph != null && pa != null) {
+      pens[fm.id] = fm.hi ? [ph, pa] : [pa, ph];
+    }
+  }
 }
 
 export default async function handler(req, res) {
@@ -130,11 +139,11 @@ export default async function handler(req, res) {
   if (!KEY) return res.status(500).json({ error: 'FOOTBALLDATA_KEY not set' });
 
   try {
-    const scores={}, liveIds=[], minutes={};
+    const scores={}, liveIds=[], minutes={}, pens={};
 
     // Call 1 — all matches
     const d1 = await get('/competitions/WC/matches');
-    for (const m of d1.matches||[]) processMatch(m, scores, liveIds, minutes);
+    for (const m of d1.matches||[]) processMatch(m, scores, liveIds, minutes, pens);
 
     // Call 2 — top scorers
     const sd = await get('/competitions/WC/scorers?limit=20');
@@ -151,6 +160,7 @@ export default async function handler(req, res) {
       matches: scores,
       live:    liveIds,
       minutes,
+      pens,
       scorers,
     });
 
