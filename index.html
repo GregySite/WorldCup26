@@ -166,16 +166,16 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 /* KNOCKOUT */
 .ko{overflow-x:auto;padding-bottom:.5rem}
 .br{display:flex;min-width:1200px;align-items:flex-start}
-.ro{display:flex;flex-direction:column;width:185px;padding:0 .3rem;flex-shrink:0}
-.rt{font-family:'Barlow Condensed',sans-serif;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);text-align:center;padding:.4rem 0 .6rem;border-bottom:1px solid var(--border);margin-bottom:.7rem;font-weight:700}
+.ro{display:flex;flex-direction:column;width:210px;padding:0 .35rem;flex-shrink:0}
+.rt{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);text-align:center;padding:.4rem 0 .6rem;border-bottom:1px solid var(--border);margin-bottom:.7rem;font-weight:700}
 .km{background:var(--card);border:1px solid var(--border);border-radius:var(--rs);overflow:hidden;transition:box-shadow .2s,border-color .2s}
 .km+.km{margin-top:0}
 .kt-team:hover{background:rgba(255,214,0,.06)}
 .km.path-highlight{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
 .kt-team.team-highlight{background:rgba(255,214,0,.12)}
-.kt{display:flex;align-items:center;justify-content:space-between;padding:.28rem .42rem;border-bottom:1px solid var(--border)}
+.kt{display:flex;align-items:center;justify-content:space-between;padding:.38rem .5rem;border-bottom:1px solid var(--border)}
 .kt:last-of-type{border-bottom:none}
-.kmeta{background:var(--bg2);padding:.18rem .42rem;font-size:.54rem;color:var(--t3);display:flex;justify-content:space-between;border-top:1px solid var(--border)}
+.kmeta{background:var(--bg2);padding:.22rem .5rem;font-size:.62rem;color:var(--t3);display:flex;justify-content:space-between;border-top:1px solid var(--border)}
 
 /* RESPONSIVE */
 ::-webkit-scrollbar{width:4px;height:4px}
@@ -754,15 +754,15 @@ function mkM(h,a,date,label,time,matchId,city){
   const pen=matchId?LIVE.pens?.[matchId]:null;
 
   const ts=(n,score)=>{
-    if(!n) return`<span style="font-size:.58rem;color:var(--t3);font-style:italic">TBD</span>`;
+    if(!n) return`<span style="font-size:.72rem;color:var(--t3);font-style:italic">TBD</span>`;
     const isPending=n.includes(' / ');
     const winner=!isPending&&s&&score!==null&&((score===s[0]&&s[0]>s[1])||(score===s[1]&&s[1]>s[0]));
     if(isPending) return`<div style="display:flex;align-items:center;justify-content:space-between;width:100%">
       <span style="font-size:.58rem;color:var(--t3)">${n}</span>
     </div>`;
     return`<div class="kt-team" data-team="${n}" style="display:flex;align-items:center;justify-content:space-between;width:100%;${winner?'background:rgba(77,166,255,.08)':''}">
-      <div style="display:flex;align-items:center;gap:.3rem">${fl(n,'fl fl-sm')}<span style="font-size:.66rem;font-weight:${winner?800:500};color:${winner?'#4da6ff':'var(--text)'}">${n}</span></div>
-      ${score!==null?`<span style="font-size:.8rem;font-weight:800;color:${live?'var(--red)':winner?'#4da6ff':'var(--t2)'}">${score}</span>`:''}
+      <div style="display:flex;align-items:center;gap:.3rem">${fl(n,'fl fl-sm')}<span style="font-size:.82rem;font-weight:${winner?800:500};color:${winner?'#4da6ff':'var(--text)'}">${n}</span></div>
+      ${score!==null?`<span style="font-size:1rem;font-weight:800;color:${live?'var(--red)':winner?'#4da6ff':'var(--t2)'}">${score}</span>`:''}
     </div>`;
   };
 
@@ -770,13 +770,13 @@ function mkM(h,a,date,label,time,matchId,city){
   if(live){
     const pct=mn?Math.min(100,Math.round(Math.min(mn,90)/90*100)):0;
     statusHtml=`<div style="padding:.15rem .42rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:.4rem">
-      <span style="font-size:.58rem;color:var(--red);font-weight:700;animation:blink 1.2s infinite">● ${mn?mn+"'":'Live'}</span>
+      <span style="font-size:.68rem;color:var(--red);font-weight:700;animation:blink 1.2s infinite">● ${mn?mn+"'":'Live'}</span>
       <div style="flex:1;height:2px;background:var(--bdr2);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--red)"></div></div>
     </div>`;
   } else if(s){
     statusHtml=`<div style="padding:.12rem .42rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:.4rem">
-      <span style="font-size:.55rem;color:var(--green);font-weight:700">✓ FT${pen?' (pens)':''}</span>
-      ${pen?`<span style="font-size:.55rem;color:var(--gold);font-weight:700">⚽ ${pen[0]}–${pen[1]} pen.</span>`:''}
+      <span style="font-size:.68rem;color:var(--green);font-weight:700">✓ FT${pen?' (pens)':''}</span>
+      ${pen?`<span style="font-size:.68rem;color:var(--gold);font-weight:700">⚽ ${pen[0]}–${pen[1]} pen.</span>`:''}
     </div>`;
   }
 
