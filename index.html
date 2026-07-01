@@ -781,7 +781,10 @@ function mkM(h,a,date,label,time,matchId,city){
   }
 
   const borderStyle=live?'border-color:rgba(255,59,48,.5);':'';
-  const metaInfo=[label,time,city].filter(Boolean).join(' · ');
+  // Format date nicely: "04/07" → "Jul 4"
+  const MON2=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtDate=date?`${MON2[parseInt(date.split('/')[1])-1]} ${parseInt(date.split('/')[0])}`:'';
+  const metaInfo=[label,fmtDate,time,city].filter(Boolean).join(' · ');
   return`<div class="km" style="${borderStyle}">
     <div class="kt">${ts(h, s?s[0]:null)}</div>
     <div class="kt">${ts(a, s?s[1]:null)}</div>
@@ -911,34 +914,34 @@ function RK(){
   }
 
   // Resolve team label like "W73" → actual team name
-  function resolveKO(label){
-    if(!label) return null;
+  // Resolve a team label to actual team name(s), recursively
+  function resolveTeam(label, depth=0){
+    if(!label||depth>5) return label;
+    if(!label.startsWith('W')&&!label.startsWith('L')) return label; // actual team name
+    const matchId=label.replace(/^[WL]/,'M');
+    const m=KO_MATCHES.find(x=>x.id===matchId);
+    if(!m) return label;
     if(label.startsWith('W')){
-      const matchId=label.replace('W','M');
       const winner=koWinner(matchId);
       if(winner) return winner;
-      // Not yet played — show both teams
-      const m=KO_MATCHES.find(x=>x.id===matchId);
-      if(m) return `${m.h} / ${m.a}`;
-      return null;
+      // Not yet played — show both potential teams recursively
+      const h=resolveTeam(m.h, depth+1);
+      const a=resolveTeam(m.a, depth+1);
+      return `${h} / ${a}`;
     }
     if(label.startsWith('L')){
-      const matchId=label.replace('L','M');
       const s=sc(matchId);
-      const m=KO_MATCHES.find(x=>x.id===matchId);
-      if(!s||!m) return null;
+      if(!s) return null;
+      const pen=LIVE.pens?.[matchId];
       if(s[0]<s[1]) return m.h;
       if(s[1]<s[0]) return m.a;
-      // Tied on regular score — loser determined by penalties
-      const pen=LIVE.pens?.[matchId];
-      if(pen){
-        if(pen[0]<pen[1]) return m.h;
-        if(pen[1]<pen[0]) return m.a;
-      }
+      if(pen){ if(pen[0]<pen[1]) return m.h; if(pen[1]<pen[0]) return m.a; }
       return null;
     }
-    return label; // actual team name
+    return label;
   }
+
+  function resolveKO(label){ return resolveTeam(label); }
 
   // ── Later rounds with dynamic winners ──
   const laterRounds=[
