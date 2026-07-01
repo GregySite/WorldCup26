@@ -781,9 +781,13 @@ function mkM(h,a,date,label,time,matchId,city){
   }
 
   const borderStyle=live?'border-color:rgba(255,59,48,.5);':'';
-  // Format date nicely: "04/07" → "Jul 4"
+  // Format date: handles "04/07" → "Jul 4" and already-formatted "Jul 4" → "Jul 4"
   const MON2=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const fmtDate=date?`${MON2[parseInt(date.split('/')[1])-1]} ${parseInt(date.split('/')[0])}`:'';
+  let fmtDate=date||'';
+  if(fmtDate.includes('/')){
+    const [dd,mm]=fmtDate.split('/').map(Number);
+    fmtDate=`${MON2[mm-1]} ${dd}`;
+  }
   const metaInfo=[label,fmtDate,time,city].filter(Boolean).join(' · ');
   return`<div class="km" style="${borderStyle}">
     <div class="kt">${ts(h, s?s[0]:null)}</div>
