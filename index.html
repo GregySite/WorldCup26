@@ -175,7 +175,7 @@ html{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font
 .kt-team.team-highlight{background:rgba(255,214,0,.12)}
 .kt{display:flex;align-items:center;justify-content:space-between;padding:.38rem .5rem;border-bottom:1px solid var(--border)}
 .kt:last-of-type{border-bottom:none}
-.kmeta{background:var(--bg2);padding:.22rem .5rem;font-size:.62rem;color:var(--t3);display:flex;justify-content:space-between;border-top:1px solid var(--border)}
+.kmeta{background:var(--bg2);padding:.22rem .5rem;font-size:.72rem;color:var(--t3);display:flex;justify-content:space-between;border-top:1px solid var(--border)}
 
 /* RESPONSIVE */
 ::-webkit-scrollbar{width:4px;height:4px}
@@ -367,8 +367,8 @@ const KO_MATCHES=[
   {id:"M99", date:"11/07",city:"Miami",       h:"W91",a:"W92",  ph:23,pm:0,round:"QF",label:"M99"},
   {id:"M100",date:"12/07",city:"Kansas City", h:"W95",a:"W96",  ph:3, pm:0,round:"QF",label:"M100"},
   // Semi-finals
-  {id:"M101",date:"14/07",city:"Dallas",      h:"W97",a:"W98",  ph:21,pm:0,round:"SF",label:"M101"},
-  {id:"M102",date:"15/07",city:"Atlanta",     h:"W99",a:"W100", ph:21,pm:0,round:"SF",label:"M102"},
+  {id:"M101",date:"14/07",city:"Dallas",      h:"W97",a:"W99",  ph:21,pm:0,round:"SF",label:"M101"},
+  {id:"M102",date:"15/07",city:"Atlanta",     h:"W98",a:"W100", ph:21,pm:0,round:"SF",label:"M102"},
   // Bronze & Final
   {id:"M103",date:"18/07",city:"Miami",       h:"L101",a:"L102",ph:23,pm:0,round:"3rd",  label:"M103"},
   {id:"M104",date:"19/07",city:"E.Rutherford",h:"W101",a:"W102",ph:21,pm:0,round:"Final",label:"M104"},
@@ -793,7 +793,7 @@ function mkM(h,a,date,label,time,matchId,city){
     <div class="kt">${ts(h, s?s[0]:null)}</div>
     <div class="kt">${ts(a, s?s[1]:null)}</div>
     ${statusHtml}
-    <div class="kmeta"><span style="font-size:.5rem;color:var(--t3)">${metaInfo}</span></div>
+    <div class="kmeta"><span style="font-size:.72rem;color:var(--t3)">${metaInfo}</span></div>
   </div>`;
 }
 
@@ -962,13 +962,13 @@ function RK(){
     ]},
     {title:'Quarter-finals',matches:[
       {h:'W89',a:'W90',  date:'Jul 9', time:'23:00',label:'M97'},
-      {h:'W93',a:'W94',  date:'Jul 10',time:'22:00',label:'M98'},
       {h:'W91',a:'W92',  date:'Jul 12',time:'00:00',label:'M99'},
+      {h:'W93',a:'W94',  date:'Jul 10',time:'22:00',label:'M98'},
       {h:'W95',a:'W96',  date:'Jul 12',time:'04:00',label:'M100'},
     ]},
     {title:'Semi-finals',matches:[
-      {h:'W97',a:'W98',  date:'Jul 14',time:'22:00',label:'M101'},
-      {h:'W99',a:'W100', date:'Jul 15',time:'22:00',label:'M102'},
+      {h:'W97',a:'W99',  date:'Jul 14',time:'22:00',label:'M101'},
+      {h:'W98',a:'W100', date:'Jul 15',time:'22:00',label:'M102'},
     ]},
     {title:'🏆 Final',matches:[
       {h:'W101',a:'W102',date:'Jul 19',time:'22:00',label:'M104'},
