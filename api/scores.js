@@ -132,18 +132,6 @@ function processMatch(m, scores, liveIds, minutes, pens, goals) {
     if (m.minute != null) minutes[fm.id] = m.minute + (m.injuryTime||0);
   }
 
-  // Extract goals with minute and scorer
-  if (m.goals && m.goals.length > 0) {
-    const matchGoals = m.goals.map(g => ({
-      minute: g.minute + (g.injuryTime ? `+${g.injuryTime}` : ''),
-      scorer: g.scorer?.name || '?',
-      team: mapT(g.team?.name || ''),
-      type: g.type, // REGULAR, OWN_GOAL, PENALTY
-    }));
-    // Store goals indexed by match id, respecting home/away orientation
-    goals[fm.id] = matchGoals;
-  }
-
   // Penalty shootout info (knockout stage only)
   if (m.score?.duration === 'PENALTY_SHOOTOUT' && m.score?.penalties) {
     const ph = m.score.penalties.home;
@@ -160,11 +148,11 @@ export default async function handler(req, res) {
   if (!KEY) return res.status(500).json({ error: 'FOOTBALLDATA_KEY not set' });
 
   try {
-    const scores={}, liveIds=[], minutes={}, pens={}, goals={};
+    const scores={}, liveIds=[], minutes={}, pens={};
 
     // Call 1 — all matches
     const d1 = await get('/competitions/WC/matches');
-    for (const m of d1.matches||[]) processMatch(m, scores, liveIds, minutes, pens, goals);
+    for (const m of d1.matches||[]) processMatch(m, scores, liveIds, minutes, pens);
 
     // Call 2 — top scorers
     const sd = await get('/competitions/WC/scorers?limit=20');
@@ -182,7 +170,6 @@ export default async function handler(req, res) {
       live:    liveIds,
       minutes,
       pens,
-      goals,
       scorers,
     });
 
