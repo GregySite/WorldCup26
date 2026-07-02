@@ -1147,23 +1147,40 @@ function RK(){
 function RS(){
   const se=document.getElementById('sg'),pt=document.getElementById('pt');
   let goals=0,played=0,exact=0,correct=0,liveNow=(LIVE.live||[]).length,maxG=0,maxM=null;
+
+  // Group stage stats
   MATCHES.forEach(m=>{
     const id=mid(m.g,m.li),s=sc(id),p=PRED[id];
     if(!s)return;played++;goals+=s[0]+s[1];
-    if(s[0]+s[1]>maxG){maxG=s[0]+s[1];maxM={m,s}}
+    if(s[0]+s[1]>maxG){maxG=s[0]+s[1];maxM={label:`Gr.${m.g} · ${G[m.g].t[m.hi]} vs ${G[m.g].t[m.ai]}`,s}}
     const rr=s[0]>s[1]?'H':s[0]<s[1]?'A':'D',pr=p.s[0]>p.s[1]?'H':p.s[0]<p.s[1]?'A':'D';
     if(p.s[0]===s[0]&&p.s[1]===s[1])exact++;if(rr===pr)correct++;
   });
-  const avg=played?(goals/played).toFixed(1):'–',acc=played?Math.round(correct/played*100)+'%':'–';
-  const mx=maxM?`${G[maxM.m.g].t[maxM.m.hi]} ${maxM.s[0]}–${maxM.s[1]} ${G[maxM.m.g].t[maxM.m.ai]}`:'–';
+
+  // Knockout stage stats
+  let koPlayed=0,koGoals=0;
+  KO_MATCHES.forEach(m=>{
+    const s=sc(m.id);
+    if(!s)return;
+    koPlayed++;koGoals+=s[0]+s[1];goals+=s[0]+s[1];
+    if(s[0]+s[1]>maxG){maxG=s[0]+s[1];maxM={label:`${m.round} · ${m.h} vs ${m.a}`,s}}
+  });
+
+  const totalPlayed=played+koPlayed;
+  const avg=totalPlayed?(goals/totalPlayed).toFixed(1):'–';
+  const acc=played?Math.round(correct/played*100)+'%':'–';
+  const mx=maxM?`${maxM.label}: ${maxM.s[0]}–${maxM.s[1]}`:'–';
+
   se.innerHTML=`
-    <div class="sc"><div class="slb">Matches played</div><div class="sv">${played}</div><div class="ssub">of ${MATCHES.length} group stage</div></div>
+    <div class="sc"><div class="slb">Matches played</div><div class="sv">${totalPlayed}</div><div class="ssub">${played} groups · ${koPlayed} knockout</div></div>
     <div class="sc"><div class="slb">Live now</div><div class="sv" style="color:${liveNow?'var(--red)':'var(--gold)'}">${liveNow}</div><div class="ssub">${liveNow?liveNow+' in progress':'no match live'}</div></div>
     <div class="sc"><div class="slb">Goals scored</div><div class="sv">${goals}</div><div class="ssub">${avg} per match</div></div>
-    <div class="sc"><div class="slb">Prediction accuracy</div><div class="sv">${acc}</div><div class="ssub">${correct}/${played} correct</div></div>
+    <div class="sc"><div class="slb">Prediction accuracy</div><div class="sv">${acc}</div><div class="ssub">${correct}/${played} correct (groups)</div></div>
     <div class="sc"><div class="slb">Exact score hits</div><div class="sv">${exact}</div><div class="ssub">perfect calls</div></div>
     <div class="sc"><div class="slb">Top scoring match</div><div class="sv" style="font-size:${maxM?'1rem':'1.8rem'}">${maxM?maxG+' goals':'–'}</div><div class="ssub" style="font-size:.62rem">${mx}</div></div>`;
+
   const rows=[];
+  // Group matches
   MATCHES.forEach(m=>{
     const id=mid(m.g,m.li),s=sc(id),p=PRED[id],g=G[m.g],live=isLive(id);
     if(!s)return;
@@ -1172,6 +1189,15 @@ function RS(){
     const badge=live?'':p.s[0]===s[0]&&p.s[1]===s[1]?'<span class="pbg pe">exact ✓</span>':rr===pr?'<span class="pbg po">✓</span>':'<span class="pbg pw">✗</span>';
     rows.push(`<div class="pr"><span style="color:var(--t2);font-size:.72rem">Gr.${m.g} · ${h} vs ${a}</span><span style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap"><span style="color:var(--gold)">🔮 ${p.s[0]}–${p.s[1]}</span><span style="color:${live?'var(--red)':'var(--green)'};font-weight:700">${live?'● ':''} ${s[0]}–${s[1]}</span>${badge}</span></div>`);
   });
+  // KO matches
+  KO_MATCHES.forEach(m=>{
+    const s=sc(m.id),live=isLive(m.id);
+    if(!s)return;
+    const pen=LIVE.pens?.[m.id];
+    const scoreStr=pen?`${s[0]}–${s[1]} (pens ${pen[0]}–${pen[1]})`:s[0]+'–'+s[1];
+    rows.push(`<div class="pr"><span style="color:var(--t2);font-size:.72rem">${m.round} · ${m.h} vs ${m.a}</span><span style="color:${live?'var(--red)':'var(--green)'};font-weight:700">${live?'● ':''} ${scoreStr}</span></div>`);
+  });
+
   pt.innerHTML=rows.length?`<div class="pt2">${rows.join('')}</div>`:'<div style="color:var(--t3);text-align:center;padding:1.2rem;font-size:.8rem">Results appear here automatically as matches are played.</div>';
 }
 
