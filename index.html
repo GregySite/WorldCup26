@@ -336,18 +336,18 @@ const MR=[
 // ══ KO MATCHES (phase finale — horaires officiels FIFA, Paris UTC+2) ══
 const KO_MATCHES=[
   // Round of 32
-  {id:"M74",date:"29/06",city:"Boston",      h:"Germany",           a:"Paraguay",           ph:22,pm:30,round:"R32",label:"M74"},
-  {id:"M77",date:"30/06",city:"E.Rutherford",h:"France",            a:"Sweden",             ph:23,pm:0, round:"R32",label:"M77"},
-  {id:"M73",date:"28/06",city:"Inglewood",   h:"South Africa",      a:"Canada",             ph:21,pm:0, round:"R32",label:"M73"},
-  {id:"M75",date:"30/06",city:"Monterrey",   h:"Netherlands",       a:"Morocco",            ph:3, pm:0, round:"R32",label:"M75"},
-  {id:"M76",date:"29/06",city:"Houston",     h:"Brazil",            a:"Japan",              ph:19,pm:0, round:"R32",label:"M76"},
-  {id:"M78",date:"30/06",city:"Dallas",      h:"Ivory Coast",       a:"Norway",             ph:19,pm:0, round:"R32",label:"M78"},
-  {id:"M79",date:"01/07",city:"Mexico City", h:"Mexico",            a:"Ecuador",            ph:3, pm:0, round:"R32",label:"M79"},
-  {id:"M80",date:"01/07",city:"Atlanta",     h:"England",           a:"DR Congo",           ph:18,pm:0, round:"R32",label:"M80"},
+  {id:"M74",date:"29/06",city:"Boston",      h:"Germany",           a:"Paraguay",           ph:22,pm:30,round:"R32",label:"M74",hl:"https://www.youtube.com/watch?v=Gw6vNwAvkTs"},
+  {id:"M77",date:"30/06",city:"E.Rutherford",h:"France",            a:"Sweden",             ph:23,pm:0, round:"R32",label:"M77",hl:"https://www.youtube.com/watch?v=A7pgChEIFTg"},
+  {id:"M73",date:"28/06",city:"Inglewood",   h:"South Africa",      a:"Canada",             ph:21,pm:0, round:"R32",label:"M73",hl:"https://www.youtube.com/watch?v=VoCkhiVWDdY"},
+  {id:"M75",date:"30/06",city:"Monterrey",   h:"Netherlands",       a:"Morocco",            ph:3, pm:0, round:"R32",label:"M75",hl:"https://www.youtube.com/watch?v=SR1vjyqXLwU"},
+  {id:"M76",date:"29/06",city:"Houston",     h:"Brazil",            a:"Japan",              ph:19,pm:0, round:"R32",label:"M76",hl:"https://www.youtube.com/watch?v=CsSdUiR_v5I"},
+  {id:"M78",date:"30/06",city:"Dallas",      h:"Ivory Coast",       a:"Norway",             ph:19,pm:0, round:"R32",label:"M78",hl:"https://www.youtube.com/watch?v=rPebJKCPjK0"},
+  {id:"M79",date:"01/07",city:"Mexico City", h:"Mexico",            a:"Ecuador",            ph:3, pm:0, round:"R32",label:"M79",hl:"https://www.youtube.com/watch?v=UDH9nQPl67k"},
+  {id:"M80",date:"01/07",city:"Atlanta",     h:"England",           a:"DR Congo",           ph:18,pm:0, round:"R32",label:"M80",hl:"https://www.youtube.com/watch?v=RzY9iBoc5Hc"},
   {id:"M83",date:"03/07",city:"Toronto",     h:"Portugal",          a:"Croatia",            ph:1, pm:0, round:"R32",label:"M83"},
   {id:"M84",date:"02/07",city:"Inglewood",   h:"Spain",             a:"Austria",            ph:21,pm:0, round:"R32",label:"M84"},
-  {id:"M81",date:"02/07",city:"Santa Clara", h:"USA",               a:"Bosnia-Herzegovina", ph:2, pm:0, round:"R32",label:"M81"},
-  {id:"M82",date:"01/07",city:"Seattle",     h:"Belgium",           a:"Senegal",            ph:22,pm:0, round:"R32",label:"M82"},
+  {id:"M81",date:"02/07",city:"Santa Clara", h:"USA",               a:"Bosnia-Herzegovina", ph:2, pm:0, round:"R32",label:"M81",hl:"https://www.youtube.com/watch?v=NuuMIICMQxo"},
+  {id:"M82",date:"01/07",city:"Seattle",     h:"Belgium",           a:"Senegal",            ph:22,pm:0, round:"R32",label:"M82",hl:"https://www.youtube.com/watch?v=XPuZPYmbk78"},
   {id:"M86",date:"04/07",city:"Miami",       h:"Argentina",         a:"Cape Verde",         ph:0, pm:0, round:"R32",label:"M86"},
   {id:"M88",date:"03/07",city:"Dallas",      h:"Australia",         a:"Egypt",              ph:20,pm:0, round:"R32",label:"M88"},
   {id:"M85",date:"03/07",city:"Vancouver",   h:"Switzerland",       a:"Algeria",            ph:5, pm:0, round:"R32",label:"M85"},
@@ -752,6 +752,8 @@ function mkM(h,a,date,label,time,matchId,city){
   const live=matchId?isLive(matchId):false;
   const mn=matchId?mMin(matchId):null;
   const pen=matchId?LIVE.pens?.[matchId]:null;
+  const ko=matchId?KO_MATCHES.find(x=>x.label===matchId):null;
+  const hlUrl=ko?.hl||null;
 
   const ts=(n,score)=>{
     if(!n) return`<span style="font-size:.72rem;color:var(--t3);font-style:italic">TBD</span>`;
@@ -774,9 +776,12 @@ function mkM(h,a,date,label,time,matchId,city){
       <div style="flex:1;height:2px;background:var(--bdr2);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--red)"></div></div>
     </div>`;
   } else if(s){
-    statusHtml=`<div style="padding:.12rem .42rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:.4rem">
-      <span style="font-size:.68rem;color:var(--green);font-weight:700">✓ FT${pen?' (pens)':''}</span>
-      ${pen?`<span style="font-size:.68rem;color:var(--gold);font-weight:700">⚽ ${pen[0]}–${pen[1]} pen.</span>`:''}
+    statusHtml=`<div style="padding:.12rem .42rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.3rem">
+      <div style="display:flex;align-items:center;gap:.4rem">
+        <span style="font-size:.68rem;color:var(--green);font-weight:700">✓ FT${pen?' (pens)':''}</span>
+        ${pen?`<span style="font-size:.68rem;color:var(--gold);font-weight:700">⚽ ${pen[0]}–${pen[1]} pen.</span>`:''}
+      </div>
+      ${hlUrl?`<a href="${hlUrl}" target="_blank" rel="noopener" style="font-size:.62rem;background:rgba(255,59,48,.12);color:#ff6b6b;padding:2px 7px;border-radius:4px;border:1px solid rgba(255,59,48,.3);text-decoration:none;white-space:nowrap;font-weight:600">▶ Highlights</a>`:''}
     </div>`;
   }
 
