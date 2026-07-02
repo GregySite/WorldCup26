@@ -96,7 +96,7 @@ const LOOKUP = (() => {
   return map;
 })();
 
-function processMatch(m, scores, liveIds, minutes, pens) {
+function processMatch(m, scores, liveIds, minutes, pens, goals) {
   const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status);
   const isDone = m.status === 'FINISHED';
   if (!isLive && !isDone) return;
@@ -114,25 +114,34 @@ function processMatch(m, scores, liveIds, minutes, pens) {
   const isKO = fm.id.startsWith('M');
   let home, away;
   if (isKO) {
-    // For KO: fullTime includes extra time goals (e.g. Belgium 3-2 Senegal)
-    // regularTime would only show 2-2
     home = m.score?.fullTime?.home ?? m.score?.regularTime?.home;
     away = m.score?.fullTime?.away ?? m.score?.regularTime?.away;
   } else {
-    // For groups: regularTime preferred, fallback to fullTime
     home = m.score?.regularTime?.home ?? m.score?.fullTime?.home;
     away = m.score?.regularTime?.away ?? m.score?.fullTime?.away;
   }
 
   if (home == null && isDone) home = 0;
   if (away == null && isDone) away = 0;
-  if (home == null || away == null) { home = 0; away = 0; } // live with no goals yet
+  if (home == null || away == null) { home = 0; away = 0; }
 
   scores[fm.id] = fm.hi ? [home, away] : [away, home];
 
   if (isLive) {
     if (!liveIds.includes(fm.id)) liveIds.push(fm.id);
     if (m.minute != null) minutes[fm.id] = m.minute + (m.injuryTime||0);
+  }
+
+  // Extract goals with minute and scorer
+  if (m.goals && m.goals.length > 0) {
+    const matchGoals = m.goals.map(g => ({
+      minute: g.minute + (g.injuryTime ? `+${g.injuryTime}` : ''),
+      scorer: g.scorer?.name || '?',
+      team: mapT(g.team?.name || ''),
+      type: g.type, // REGULAR, OWN_GOAL, PENALTY
+    }));
+    // Store goals indexed by match id, respecting home/away orientation
+    goals[fm.id] = matchGoals;
   }
 
   // Penalty shootout info (knockout stage only)
@@ -151,11 +160,11 @@ export default async function handler(req, res) {
   if (!KEY) return res.status(500).json({ error: 'FOOTBALLDATA_KEY not set' });
 
   try {
-    const scores={}, liveIds=[], minutes={}, pens={};
+    const scores={}, liveIds=[], minutes={}, pens={}, goals={};
 
     // Call 1 — all matches
     const d1 = await get('/competitions/WC/matches');
-    for (const m of d1.matches||[]) processMatch(m, scores, liveIds, minutes, pens);
+    for (const m of d1.matches||[]) processMatch(m, scores, liveIds, minutes, pens, goals);
 
     // Call 2 — top scorers
     const sd = await get('/competitions/WC/scorers?limit=20');
@@ -173,6 +182,7 @@ export default async function handler(req, res) {
       live:    liveIds,
       minutes,
       pens,
+      goals,
       scorers,
     });
 
