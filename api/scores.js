@@ -107,10 +107,22 @@ function processMatch(m, scores, liveIds, minutes, pens) {
     return;
   }
 
-  // Get score — prefer regularTime (90min) for the main displayed score
-  // so knockout matches show the 90min result, not extra-time/penalty inflated numbers
-  let home = m.score?.regularTime?.home ?? m.score?.fullTime?.home;
-  let away = m.score?.regularTime?.away ?? m.score?.fullTime?.away;
+  // Score logic:
+  // - KO matches (extra time possible): use fullTime which includes ET goals
+  // - Group stage: regularTime is fine (no ET)
+  // - Penalties are shown separately via pens object
+  const isKO = fm.id.startsWith('M');
+  let home, away;
+  if (isKO) {
+    // For KO: fullTime includes extra time goals (e.g. Belgium 3-2 Senegal)
+    // regularTime would only show 2-2
+    home = m.score?.fullTime?.home ?? m.score?.regularTime?.home;
+    away = m.score?.fullTime?.away ?? m.score?.regularTime?.away;
+  } else {
+    // For groups: regularTime preferred, fallback to fullTime
+    home = m.score?.regularTime?.home ?? m.score?.fullTime?.home;
+    away = m.score?.regularTime?.away ?? m.score?.fullTime?.away;
+  }
 
   if (home == null && isDone) home = 0;
   if (away == null && isDone) away = 0;
