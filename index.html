@@ -413,7 +413,7 @@ MATCHES.forEach(m=>{
 });
 
 // ══ STATE ══
-let LIVE={matches:{},live:[],minutes:{},pens:{},scorers:[]};
+let LIVE={matches:{},live:[],minutes:{},pens:{},goals:{},scorers:[]};
 const sc=id=>LIVE.matches[id]??null;
 const isLive=id=>(LIVE.live||[]).includes(id);
 const mMin=id=>LIVE.minutes?.[id]??null;
@@ -776,12 +776,28 @@ function mkM(h,a,date,label,time,matchId,city){
       <div style="flex:1;height:2px;background:var(--bdr2);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--red)"></div></div>
     </div>`;
   } else if(s){
-    statusHtml=`<div style="padding:.12rem .42rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.3rem">
-      <div style="display:flex;align-items:center;gap:.4rem">
-        <span style="font-size:.68rem;color:var(--green);font-weight:700">✓ FT${pen?' (pens)':''}</span>
-        ${pen?`<span style="font-size:.68rem;color:var(--gold);font-weight:700">⚽ ${pen[0]}–${pen[1]} pen.</span>`:''}
+    const matchGoals=matchId?LIVE.goals?.[matchId]:null;
+    let goalsHtml='';
+    if(matchGoals&&matchGoals.length>0){
+      const ko=matchId?KO_MATCHES.find(x=>x.label===matchId):null;
+      const homeTeam=ko?.h||h;
+      goalsHtml=matchGoals.map(g=>{
+        const isHome=g.team===homeTeam;
+        const icon=g.type==='OWN_GOAL'?'⚽️(og)':g.type==='PENALTY'?'⚽️(p)':'⚽️';
+        // Short name: last word of scorer name
+        const name=g.scorer.split(' ').pop();
+        return `<span style="font-size:.6rem;color:var(--t2)">${isHome?'':'↳ '}${g.minute}' ${icon} ${name}</span>`;
+      }).join('<span style="color:var(--border);margin:0 3px">|</span>');
+    }
+    statusHtml=`<div style="padding:.12rem .42rem;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.3rem">
+        <div style="display:flex;align-items:center;gap:.4rem">
+          <span style="font-size:.68rem;color:var(--green);font-weight:700">✓ FT${pen?' (pens)':''}</span>
+          ${pen?`<span style="font-size:.68rem;color:var(--gold);font-weight:700">⚽ ${pen[0]}–${pen[1]} pen.</span>`:''}
+        </div>
+        ${s&&hlUrl?`<a href="${hlUrl}" target="_blank" rel="noopener" style="font-size:.62rem;background:rgba(255,59,48,.12);color:#ff6b6b;padding:2px 7px;border-radius:4px;border:1px solid rgba(255,59,48,.3);text-decoration:none;white-space:nowrap;font-weight:600">▶ Highlights</a>`:''}
       </div>
-      ${s&&hlUrl?`<a href="${hlUrl}" target="_blank" rel="noopener" style="font-size:.62rem;background:rgba(255,59,48,.12);color:#ff6b6b;padding:2px 7px;border-radius:4px;border:1px solid rgba(255,59,48,.3);text-decoration:none;white-space:nowrap;font-weight:600">▶ Highlights</a>`:''}
+      ${goalsHtml?`<div style="margin-top:.2rem;display:flex;flex-wrap:wrap;gap:4px">${goalsHtml}</div>`:''}
     </div>`;
   }
 
@@ -1190,7 +1206,7 @@ async function fetchScores(){
     else if(done>0){pill.className='pill pill-ok';pill.textContent='✓ Live';msg.textContent=`${done} results loaded`;}
     else{pill.className='pill pill-ok';pill.textContent='✓ Connected';msg.textContent='No results yet';}
     upd.textContent='· '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    const hash=JSON.stringify({m:j.matches,l:j.live,s:j.scorers,p:j.pens});
+    const hash=JSON.stringify({m:j.matches,l:j.live,s:j.scorers,p:j.pens,g:j.goals});
     if(hash!==prevHash){
       prevHash=hash;RG();RS();
       if(document.getElementById('view-sched').classList.contains('active'))RU();
