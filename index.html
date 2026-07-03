@@ -374,20 +374,19 @@ const KO_MATCHES=[
   {id:"M104",date:"19/07",city:"E.Rutherford",h:"W101",a:"W102",ph:21,pm:0,round:"Final",label:"M104",hl:"https://www.fifa.com/en/articles/final-match-report-highlights"},
 ];
 const PO=2;
+// Convert Paris hour to local time string
 function lt(ph,pm=0){
-  const lo=-(new Date().getTimezoneOffset()/60);
-  const localH=((ph+(lo-PO))+24)%24;
-  return String(Math.floor(localH)).padStart(2,'0')+':'+String(pm).padStart(2,'0');
+  const d=pd('01/01',ph,pm); // dummy date just to get local hours
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
 }
 function pd(d,ph,pm=0){
+  // Convert Paris date+time to a JS Date in user's local timezone
+  // ph is Paris hour (UTC+2 in summer)
   const[day,mo]=d.split('/').map(Number);
-  const lo=-(new Date().getTimezoneOffset()/60); // user's local offset
-  const parisOffset=2; // UTC+2 summer
-  const localH=((ph+(lo-parisOffset))+24)%24;
-  // Rollover: does converting ph (Paris) to local cross midnight?
-  const rawLocal=ph+(lo-parisOffset);
-  const rollover=rawLocal>=24?1:rawLocal<0?-1:0;
-  return new Date(2026,mo-1,day+rollover,localH,pm,0);
+  const utcH=(ph-2+24)%24; // Paris → UTC
+  const utcM=pm;
+  // Create the date in UTC, then let JS handle local timezone
+  return new Date(Date.UTC(2026,mo-1,day,utcH,utcM,0));
 }
 try{document.getElementById('tz').textContent=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){}
 setInterval(()=>{const e=document.getElementById('clock');if(e)e.textContent='🕐 '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})},1000);
@@ -655,9 +654,9 @@ function RU(){
     else if(uf==='live'&&st2!=='live')return;
     else if(uf==='soon'&&(st2==='done'||st2==='live'))return;
     else if(uf==='done'&&st2!=='done')return;
-    // Use the actual match date for grouping (pd result date, not m.date string)
-    const dateKey=`${String(md2.getDate()).padStart(2,'0')}/${String(md2.getMonth()+1).padStart(2,'0')}`;
-    (bd[dateKey]=bd[dateKey]||[]).push({...m,st2,isKO:true,ph:m.ph,date:dateKey});
+    // Group by local date (pd() returns UTC, getDate/Month gives local date)
+    const localDate=md2.toLocaleDateString('en-GB').split('/').slice(0,2).join('/'); // dd/mm
+    (bd[localDate]=bd[localDate]||[]).push({...m,st2,isKO:true,localDate});
   });
   const sOrd={done:0,live:1,soon:2,pending:3};
   Object.keys(bd).forEach(date=>{
