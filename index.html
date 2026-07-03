@@ -617,12 +617,17 @@ let uf='all';
 function UF(f,btn){uf=f;document.querySelectorAll('#fb button').forEach(b=>b.classList.remove('act'));btn.classList.add('act');RU()}
 
 function koMatchStatus(m){
+  // If API has a score → match is done (most reliable)
+  if(sc(m.id)) return'done';
+  // If API says live → live
+  if(isLive(m.id)) return'live';
+  // Otherwise use time
   const matchTime=pd(m.date,m.ph,m.pm||0);
   const now=new Date();
   const diff=matchTime-now;
-  if(diff>0&&diff<86400000*7) return'soon';
-  if(diff<=0&&diff>-7200000) return'live';  // within 2h of kickoff
+  if(diff<=0&&diff>-7200000) return'live';
   if(diff<=-7200000) return'done';
+  if(diff>0&&diff<86400000*7) return'soon';
   return'pending';
 }
 
