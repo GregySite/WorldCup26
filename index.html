@@ -381,10 +381,12 @@ function lt(ph,pm=0){
 }
 function pd(d,ph,pm=0){
   const[day,mo]=d.split('/').map(Number);
-  const lo=-(new Date().getTimezoneOffset()/60);
-  const utcH=(ph-2+24)%24;
-  const localH=(utcH+lo+24)%24;
-  const rollover=(utcH+lo)>=24?1:(utcH+lo)<0?-1:0;
+  const lo=-(new Date().getTimezoneOffset()/60); // user's local offset
+  const parisOffset=2; // UTC+2 summer
+  const localH=((ph+(lo-parisOffset))+24)%24;
+  // Rollover: does converting ph (Paris) to local cross midnight?
+  const rawLocal=ph+(lo-parisOffset);
+  const rollover=rawLocal>=24?1:rawLocal<0?-1:0;
   return new Date(2026,mo-1,day+rollover,localH,pm,0);
 }
 try{document.getElementById('tz').textContent=Intl.DateTimeFormat().resolvedOptions().timeZone}catch(e){}
