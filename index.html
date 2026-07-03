@@ -648,16 +648,28 @@ function RU(){
 
   // Knockout stage matches
   KO_MATCHES.forEach(m=>{
-    const st2=koMatchStatus(m),md2=pd(m.date,m.ph);
+    const md2=pd(m.date,m.ph,m.pm||0);
+    const st2=koMatchStatus(m); // calculated fresh each time
     if(uf==='today'){const t=new Date();if(md2.getDate()!==t.getDate()||md2.getMonth()!==t.getMonth())return}
     else if(uf==='week'){const df=md2-now;if(df<-86400000||df>7*86400000)return}
     else if(uf==='live'&&st2!=='live')return;
     else if(uf==='soon'&&(st2==='done'||st2==='live'))return;
     else if(uf==='done'&&st2!=='done')return;
-    (bd[m.date]=bd[m.date]||[]).push({...m,st2,isKO:true});
+    // Use the actual match date for grouping (pd result date, not m.date string)
+    const dateKey=`${String(md2.getDate()).padStart(2,'0')}/${String(md2.getMonth()+1).padStart(2,'0')}`;
+    (bd[dateKey]=bd[dateKey]||[]).push({...m,st2,isKO:true,ph:m.ph,date:dateKey});
   });
   const sOrd={done:0,live:1,soon:2,pending:3};
-  Object.keys(bd).forEach(date=>{bd[date].sort((a,b)=>sOrd[a.st2]-sOrd[b.st2]||a.ph-b.ph)});
+  Object.keys(bd).forEach(date=>{
+    bd[date].sort((a,b)=>{
+      const so=sOrd[a.st2]-sOrd[b.st2];
+      if(so!==0)return so;
+      // Sort by actual local kickoff time
+      const ta=pd(a.date||date,a.ph,a.pm||0);
+      const tb=pd(b.date||date,b.ph,b.pm||0);
+      return ta-tb;
+    });
+  });
   const dates=Object.keys(bd).sort((a,b)=>{const[da,ma]=a.split('/').map(Number),[db,mb]=b.split('/').map(Number);return ma!==mb?ma-mb:da-db});
   if(!dates.length){c.innerHTML='<div style="color:var(--t3);text-align:center;padding:2rem;font-size:.82rem">No matches for this filter.</div>';return}
   let nowDone=false,nowEl=null;
