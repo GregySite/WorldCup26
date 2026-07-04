@@ -698,19 +698,25 @@ function RU(){
         const koMn=mMin(m.id);
         const koSt=koLive?'live':koScore?'done':m.st2;
         const live=koLive;
+        // Resolve team names (W74 → Germany/Paraguay etc.)
+        const hName=resolveTeam(m.h)||m.h;
+        const aName=resolveTeam(m.a)||m.a;
+        const hPending=hName.includes(' / ');
+        const aPending=aName.includes(' / ');
+        const hStr=STR[hName],aStr=STR[aName];
         itHtml=`
           <div><div class="ud">${d}</div><div class="um">${MON[parseInt(mo)-1]}</div><div class="ut">${lt(m.ph,m.pm||0)}</div></div>
           <div style="min-width:0">
             <div style="font-weight:600;font-size:.84rem;display:flex;align-items:center;gap:.3rem;flex-wrap:wrap">
-              ${fl(m.h,'fl fl-sm')} ${m.h}
+              ${hPending?'':fl(hName,'fl fl-sm')}<span style="${hPending?'font-size:.75rem;color:var(--t2)':''}">${hName}</span>
               <span style="color:var(--t3);font-weight:400">vs</span>
-              ${m.a} ${fl(m.a,'fl fl-sm')}
+              <span style="${aPending?'font-size:.75rem;color:var(--t2)':''}"> ${aName}</span>${aPending?'':fl(aName,'fl fl-sm')}
             </div>
             <div style="font-size:.66rem;color:var(--t2);margin-top:.1rem">${m.city} · ${m.round}</div>
             <div style="margin-top:.28rem;display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
               ${stMap[koSt]||''}
               ${koMn&&koLive?`<span style="font-size:.6rem;color:var(--red);font-weight:700">${koMn}'</span>`:''}
-              ${(()=>{const hStr=STR[m.h]||75,aStr=STR[m.a]||75,p=pred(hStr,aStr);return`<span style="font-size:.66rem;color:var(--gold)">🔮 ${p[0]}–${p[1]}</span>`})()}
+              ${hStr&&aStr?`<span style="font-size:.66rem;color:var(--gold)">🔮 ${pred(hStr,aStr)[0]}–${pred(hStr,aStr)[1]}</span>`:''}
               ${koScore?`<span style="font-size:.66rem;color:${koLive?'var(--red)':'var(--green)'};font-weight:700">${koLive?'● ':'⚽ '}${koScore[0]}–${koScore[1]}</span>`:''}
             </div>
             ${koLive?`<div style="width:100%;height:2px;background:var(--bdr2);border-radius:2px;margin-top:.35rem;overflow:hidden"><div style="height:100%;width:${Math.min(100,Math.round((Math.min(koMn||0,90)/90)*100))}%;background:var(--red)"></div></div>`:''}
@@ -820,6 +826,43 @@ function mkM(h,a,date,label,time,matchId,city){
   </div>`;
 }
 
+// ══ KO WINNER / RESOLVE TEAM (global) ══
+function koWinner(matchId){
+  const s=sc(matchId);
+  if(!s) return null;
+  const m=KO_MATCHES.find(x=>x.id===matchId);
+  if(!m) return null;
+  if(s[0]>s[1]) return m.h;
+  if(s[1]>s[0]) return m.a;
+  const pen=LIVE.pens?.[matchId];
+  if(pen){ if(pen[0]>pen[1]) return m.h; if(pen[1]>pen[0]) return m.a; }
+  return null;
+}
+function resolveTeam(label, depth=0){
+  if(!label||depth>5) return label;
+  if(!label.startsWith('W')&&!label.startsWith('L')) return label;
+  const matchId=label.replace(/^[WL]/,'M');
+  const m=KO_MATCHES.find(x=>x.id===matchId);
+  if(!m) return label;
+  if(label.startsWith('W')){
+    const winner=koWinner(matchId);
+    if(winner) return winner;
+    const h=resolveTeam(m.h, depth+1);
+    const a=resolveTeam(m.a, depth+1);
+    return `${h} / ${a}`;
+  }
+  if(label.startsWith('L')){
+    const s=sc(matchId);
+    if(!s) return null;
+    const pen=LIVE.pens?.[matchId];
+    if(s[0]<s[1]) return m.h;
+    if(s[1]<s[0]) return m.a;
+    if(pen){ if(pen[0]<pen[1]) return m.h; if(pen[1]<pen[0]) return m.a; }
+    return null;
+  }
+  return label;
+}
+
 // ══ BRACKET CONNECTING LINES ══
 function drawBracketLines(container, cols){
   const svg=document.getElementById('bracket-lines');
@@ -921,52 +964,6 @@ function RK(){
     r32col.appendChild(div);
   });
   c.appendChild(r32col);
-
-  // ── Resolve KO match winner from API score ──
-  // Returns team name of winner, or null if not yet played
-  function koWinner(matchId){
-    const s=sc(matchId);
-    if(!s) return null;
-    const m=KO_MATCHES.find(x=>x.id===matchId);
-    if(!m) return null;
-    if(s[0]>s[1]) return m.h;
-    if(s[1]>s[0]) return m.a;
-    // Tied on regular score — check penalty shootout
-    const pen=LIVE.pens?.[matchId];
-    if(pen){
-      if(pen[0]>pen[1]) return m.h;
-      if(pen[1]>pen[0]) return m.a;
-    }
-    return null; // still no winner known
-  }
-
-  // Resolve team label like "W73" → actual team name
-  // Resolve a team label to actual team name(s), recursively
-  function resolveTeam(label, depth=0){
-    if(!label||depth>5) return label;
-    if(!label.startsWith('W')&&!label.startsWith('L')) return label; // actual team name
-    const matchId=label.replace(/^[WL]/,'M');
-    const m=KO_MATCHES.find(x=>x.id===matchId);
-    if(!m) return label;
-    if(label.startsWith('W')){
-      const winner=koWinner(matchId);
-      if(winner) return winner;
-      // Not yet played — show both potential teams recursively
-      const h=resolveTeam(m.h, depth+1);
-      const a=resolveTeam(m.a, depth+1);
-      return `${h} / ${a}`;
-    }
-    if(label.startsWith('L')){
-      const s=sc(matchId);
-      if(!s) return null;
-      const pen=LIVE.pens?.[matchId];
-      if(s[0]<s[1]) return m.h;
-      if(s[1]<s[0]) return m.a;
-      if(pen){ if(pen[0]<pen[1]) return m.h; if(pen[1]<pen[0]) return m.a; }
-      return null;
-    }
-    return label;
-  }
 
   function resolveKO(label){ return resolveTeam(label); }
 
