@@ -817,11 +817,19 @@ function mkM(h,a,date,label,time,matchId,city){
     const [dd,mm]=fmtDate.split('/').map(Number);
     fmtDate=`${MON2[mm-1]} ${dd}`;
   }
+  // Prediction for upcoming matches with known real teams
+  const hReal=h&&!h.includes(' / ');
+  const aReal=a&&!a.includes(' / ');
+  const predHtml=(!s&&!live&&hReal&&aReal&&h&&a&&STR[h]&&STR[a])?
+    `<div style="padding:.1rem .42rem;border-top:1px solid var(--border)">
+      <span style="font-size:.62rem;color:var(--gold)">🔮 ${pred(STR[h],STR[a])[0]}–${pred(STR[h],STR[a])[1]}</span>
+    </div>`:'';
   const metaInfo=[label,fmtDate,time,city].filter(Boolean).join(' · ');
   return`<div class="km" style="${borderStyle}">
     <div class="kt">${ts(h, s?s[0]:null)}</div>
     <div class="kt">${ts(a, s?s[1]:null)}</div>
     ${statusHtml}
+    ${predHtml}
     <div class="kmeta"><span style="font-size:.72rem;color:var(--t3)">${metaInfo}</span></div>
   </div>`;
 }
