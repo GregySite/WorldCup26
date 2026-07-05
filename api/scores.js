@@ -72,7 +72,7 @@ const LOOKUP = (() => {
   return map;
 })();
 
-// KO bracket structure — used to resolve winner chains
+// KO bracket — real team names updated as tournament progresses
 const KO_BRACKET = {
   // R32
   'M73':['South Africa','Canada'],
@@ -91,7 +91,7 @@ const KO_BRACKET = {
   'M86':['Argentina','Cape Verde'],
   'M87':['Colombia','Ghana'],
   'M88':['Australia','Egypt'],
-  // R16 — actual matchups
+  // R16 — actual teams
   'M89':['Paraguay','France'],
   'M90':['Canada','Morocco'],
   'M91':['Brazil','Norway'],
@@ -100,66 +100,18 @@ const KO_BRACKET = {
   'M94':['USA','Belgium'],
   'M95':['Argentina','Egypt'],
   'M96':['Switzerland','Colombia'],
-  // QF, SF, Final — will be resolved dynamically from scores
-  'M97':['W89','W90'],
-  'M99':['W91','W92'],
-  'M98':['W93','W94'],
-  'M100':['W95','W96'],
-  'M101':['W97','W99'],
-  'M102':['W98','W100'],
-  'M103':['L101','L102'],
-  'M104':['W101','W102'],
+  // QF — resolved from R16 winners
+  'M97':['France','Morocco'],
+  'M99':['Brazil','Mexico'],
+  'M98':['Portugal','USA'],
+  'M100':['Argentina','Switzerland'],
+  // SF — resolved from QF winners (update after QF)
+  'M101':['France','Brazil'],
+  'M102':['Portugal','Argentina'],
+  // 3rd & Final
+  'M103':['Paraguay','Morocco'],
+  'M104':['France','Portugal'],
 };
-
-// scores collected so far (filled as matches are processed)
-const koScores = {};
-const koPens = {};
-
-function koWinner(matchId) {
-  const teams = KO_BRACKET[matchId];
-  if (!teams) return null;
-  const [h, a] = teams.map(t => t.startsWith('W')||t.startsWith('L') ? resolveTeam(t) : t);
-  const key1 = `${h}|||${a}`;
-  const key2 = `${a}|||${h}`;
-  const fm = LOOKUP[key1] || LOOKUP[key2];
-  if (!fm) return null;
-  const s = koScores[matchId];
-  if (!s) return null;
-  const [sh, sa] = fm.hi ? s : [s[1], s[0]];
-  if (sh > sa) return h;
-  if (sa > sh) return a;
-  const p = koPens[matchId];
-  if (p) {
-    const [ph, pa] = fm.hi ? p : [p[1], p[0]];
-    if (ph > pa) return h;
-    if (pa > ph) return a;
-  }
-  return null;
-}
-
-function resolveTeam(label, depth=0) {
-  if (!label || depth > 6) return null;
-  if (!label.startsWith('W') && !label.startsWith('L')) return label;
-  const matchId = label.replace(/^[WL]/, 'M');
-  const [h, a] = (KO_BRACKET[matchId] || []).map(t =>
-    t.startsWith('W')||t.startsWith('L') ? resolveTeam(t, depth+1) : t
-  );
-  if (!h || !a) return null;
-  if (label.startsWith('W')) return koWinner(matchId);
-  // Loser
-  const w = koWinner(matchId);
-  if (!w) return null;
-  return w === h ? a : h;
-}
-
-// Build dynamic LOOKUP entry for a KO match
-function koLookupKey(matchId) {
-  const [ht, at] = (KO_BRACKET[matchId] || []).map(t =>
-    t.startsWith('W')||t.startsWith('L') ? resolveTeam(t) : t
-  );
-  if (!ht || !at) return null;
-  return { key1:`${ht}|||${at}`, key2:`${at}|||${ht}`, hi:true, id:matchId, h:ht, a:at };
-}
 
 function processMatch(m, scores, liveIds, minutes, pens) {
   const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status);
@@ -172,13 +124,13 @@ function processMatch(m, scores, liveIds, minutes, pens) {
   // Try group stage LOOKUP first
   let fm = LOOKUP[`${hn}|||${an}`];
 
-  // Try KO matches dynamically
+  // Try KO bracket directly
   if (!fm) {
-    for (const matchId of Object.keys(KO_BRACKET)) {
-      const entry = koLookupKey(matchId);
-      if (!entry) continue;
-      if (entry.key1 === `${hn}|||${an}`) { fm = { id:matchId, hi:true }; break; }
-      if (entry.key2 === `${hn}|||${an}`) { fm = { id:matchId, hi:false }; break; }
+    for (const [matchId, [h, a]] of Object.entries(KO_BRACKET)) {
+      if ((h===hn&&a===an)||(h===an&&a===hn)) {
+        fm = { id:matchId, hi: h===hn };
+        break;
+      }
     }
   }
 
@@ -202,7 +154,6 @@ function processMatch(m, scores, liveIds, minutes, pens) {
   if (home == null || away == null) { home = 0; away = 0; }
 
   scores[fm.id] = fm.hi ? [home, away] : [away, home];
-  if (isKO) koScores[fm.id] = scores[fm.id];
 
   if (isLive) {
     if (!liveIds.includes(fm.id)) liveIds.push(fm.id);
@@ -214,7 +165,6 @@ function processMatch(m, scores, liveIds, minutes, pens) {
     const pa = m.score.penalties.away;
     if (ph != null && pa != null) {
       pens[fm.id] = fm.hi ? [ph, pa] : [pa, ph];
-      if (isKO) koPens[fm.id] = pens[fm.id];
     }
   }
 }
