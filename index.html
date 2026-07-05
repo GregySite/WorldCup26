@@ -840,10 +840,13 @@ function koWinner(matchId){
   if(!s) return null;
   const m=KO_MATCHES.find(x=>x.id===matchId);
   if(!m) return null;
-  if(s[0]>s[1]) return m.h;
-  if(s[1]>s[0]) return m.a;
+  // Resolve actual team names (m.h/m.a may be W/L labels)
+  const hName=resolveTeam(m.h, 1);
+  const aName=resolveTeam(m.a, 1);
+  if(s[0]>s[1]) return hName||m.h;
+  if(s[1]>s[0]) return aName||m.a;
   const pen=LIVE.pens?.[matchId];
-  if(pen){ if(pen[0]>pen[1]) return m.h; if(pen[1]>pen[0]) return m.a; }
+  if(pen){ if(pen[0]>pen[1]) return hName||m.h; if(pen[1]>pen[0]) return aName||m.a; }
   return null;
 }
 function resolveTeam(label, depth=0){
