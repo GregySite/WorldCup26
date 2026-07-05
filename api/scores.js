@@ -71,6 +71,7 @@ const LOOKUP = (() => {
 
   // ── Knockout stage matches ──
   const ko = [
+    // R32
     ['M73', 'South Africa','Canada'],
     ['M76', 'Brazil','Japan'],
     ['M74', 'Germany','Paraguay'],
@@ -87,6 +88,15 @@ const LOOKUP = (() => {
     ['M88', 'Australia','Egypt'],
     ['M86', 'Argentina','Cape Verde'],
     ['M87', 'Colombia','Ghana'],
+    // R16
+    ['M89', 'Paraguay','France'],
+    ['M90', 'Canada','Morocco'],
+    ['M91', 'Brazil','Norway'],
+    ['M92', 'Mexico','England'],
+    ['M93', 'Portugal','Spain'],
+    ['M94', 'USA','Belgium'],
+    ['M95', 'Argentina','Egypt'],
+    ['M96', 'Switzerland','Colombia'],
   ];
   for (const [id,h,a] of ko) {
     map[`${h}|||${a}`] = { id, hi:true  };
