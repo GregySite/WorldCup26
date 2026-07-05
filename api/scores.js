@@ -1,5 +1,5 @@
 // Vercel Serverless Function — World Cup 2026 v2
-// football-data.org free plan — 2 calls only, fast & reliable
+// football-data.org free plan — 2 calls only
 
 const KEY  = process.env.FOOTBALLDATA_KEY;
 const BASE = 'https://api.football-data.org/v4';
@@ -9,10 +9,10 @@ const TEAM_MAP = {
   'Bosnia and Herzegovina':'Bosnia-Herzegovina',
   'United States':'USA','Türkiye':'Turkey',
   "Côte d'Ivoire":'Ivory Coast',"Cote d'Ivoire":'Ivory Coast',
+  "Cote d'Ivoire":'Ivory Coast',
   'IR Iran':'Iran',
   'Cabo Verde':'Cape Verde','Cape Verde Islands':'Cape Verde',
   'Congo DR':'DR Congo','Democratic Republic of Congo':'DR Congo','Congo, DR':'DR Congo',
-  'Cote d\'Ivoire':'Ivory Coast',"Côte d'Ivoire":'Ivory Coast',
 };
 const mapT = n => TEAM_MAP[n] || n;
 
@@ -22,6 +22,7 @@ async function get(path) {
   return r.json();
 }
 
+// Build LOOKUP from raw arrays
 const LOOKUP = (() => {
   const raw = [
     ['A','Mexico','South Africa'],        ['A','South Korea','Czech Republic'],
@@ -68,59 +69,124 @@ const LOOKUP = (() => {
     map[`${h}|||${a}`] = { id, hi:true  };
     map[`${a}|||${h}`] = { id, hi:false };
   }
-
-  // ── Knockout stage matches ──
-  const ko = [
-    // R32
-    ['M73', 'South Africa','Canada'],
-    ['M76', 'Brazil','Japan'],
-    ['M74', 'Germany','Paraguay'],
-    ['M75', 'Netherlands','Morocco'],
-    ['M78', 'Ivory Coast','Norway'],
-    ['M77', 'France','Sweden'],
-    ['M79', 'Mexico','Ecuador'],
-    ['M80', 'England','DR Congo'],
-    ['M82', 'Belgium','Senegal'],
-    ['M81', 'USA','Bosnia-Herzegovina'],
-    ['M84', 'Spain','Austria'],
-    ['M83', 'Portugal','Croatia'],
-    ['M85', 'Switzerland','Algeria'],
-    ['M88', 'Australia','Egypt'],
-    ['M86', 'Argentina','Cape Verde'],
-    ['M87', 'Colombia','Ghana'],
-    // R16
-    ['M89', 'Paraguay','France'],
-    ['M90', 'Canada','Morocco'],
-    ['M91', 'Brazil','Norway'],
-    ['M92', 'Mexico','England'],
-    ['M93', 'Portugal','Spain'],
-    ['M94', 'USA','Belgium'],
-    ['M95', 'Argentina','Egypt'],
-    ['M96', 'Switzerland','Colombia'],
-  ];
-  for (const [id,h,a] of ko) {
-    map[`${h}|||${a}`] = { id, hi:true  };
-    map[`${a}|||${h}`] = { id, hi:false };
-  }
-
   return map;
 })();
 
-function processMatch(m, scores, liveIds, minutes, pens, goals) {
+// KO bracket structure — used to resolve winner chains
+const KO_BRACKET = {
+  // R32
+  'M73':['South Africa','Canada'],
+  'M74':['Germany','Paraguay'],
+  'M75':['Netherlands','Morocco'],
+  'M76':['Brazil','Japan'],
+  'M77':['France','Sweden'],
+  'M78':['Ivory Coast','Norway'],
+  'M79':['Mexico','Ecuador'],
+  'M80':['England','DR Congo'],
+  'M81':['USA','Bosnia-Herzegovina'],
+  'M82':['Belgium','Senegal'],
+  'M83':['Portugal','Croatia'],
+  'M84':['Spain','Austria'],
+  'M85':['Switzerland','Algeria'],
+  'M86':['Argentina','Cape Verde'],
+  'M87':['Colombia','Ghana'],
+  'M88':['Australia','Egypt'],
+  // R16 — actual matchups
+  'M89':['Paraguay','France'],
+  'M90':['Canada','Morocco'],
+  'M91':['Brazil','Norway'],
+  'M92':['Mexico','England'],
+  'M93':['Portugal','Spain'],
+  'M94':['USA','Belgium'],
+  'M95':['Argentina','Egypt'],
+  'M96':['Switzerland','Colombia'],
+  // QF, SF, Final — will be resolved dynamically from scores
+  'M97':['W89','W90'],
+  'M99':['W91','W92'],
+  'M98':['W93','W94'],
+  'M100':['W95','W96'],
+  'M101':['W97','W99'],
+  'M102':['W98','W100'],
+  'M103':['L101','L102'],
+  'M104':['W101','W102'],
+};
+
+// scores collected so far (filled as matches are processed)
+const koScores = {};
+const koPens = {};
+
+function koWinner(matchId) {
+  const teams = KO_BRACKET[matchId];
+  if (!teams) return null;
+  const [h, a] = teams.map(t => t.startsWith('W')||t.startsWith('L') ? resolveTeam(t) : t);
+  const key1 = `${h}|||${a}`;
+  const key2 = `${a}|||${h}`;
+  const fm = LOOKUP[key1] || LOOKUP[key2];
+  if (!fm) return null;
+  const s = koScores[matchId];
+  if (!s) return null;
+  const [sh, sa] = fm.hi ? s : [s[1], s[0]];
+  if (sh > sa) return h;
+  if (sa > sh) return a;
+  const p = koPens[matchId];
+  if (p) {
+    const [ph, pa] = fm.hi ? p : [p[1], p[0]];
+    if (ph > pa) return h;
+    if (pa > ph) return a;
+  }
+  return null;
+}
+
+function resolveTeam(label, depth=0) {
+  if (!label || depth > 6) return null;
+  if (!label.startsWith('W') && !label.startsWith('L')) return label;
+  const matchId = label.replace(/^[WL]/, 'M');
+  const [h, a] = (KO_BRACKET[matchId] || []).map(t =>
+    t.startsWith('W')||t.startsWith('L') ? resolveTeam(t, depth+1) : t
+  );
+  if (!h || !a) return null;
+  if (label.startsWith('W')) return koWinner(matchId);
+  // Loser
+  const w = koWinner(matchId);
+  if (!w) return null;
+  return w === h ? a : h;
+}
+
+// Build dynamic LOOKUP entry for a KO match
+function koLookupKey(matchId) {
+  const [ht, at] = (KO_BRACKET[matchId] || []).map(t =>
+    t.startsWith('W')||t.startsWith('L') ? resolveTeam(t) : t
+  );
+  if (!ht || !at) return null;
+  return { key1:`${ht}|||${at}`, key2:`${at}|||${ht}`, hi:true, id:matchId, h:ht, a:at };
+}
+
+function processMatch(m, scores, liveIds, minutes, pens) {
   const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status);
   const isDone = m.status === 'FINISHED';
   if (!isLive && !isDone) return;
 
-  const fm = LOOKUP[`${mapT(m.homeTeam?.name||'')}|||${mapT(m.awayTeam?.name||'')}`];
+  const hn = mapT(m.homeTeam?.name||'');
+  const an = mapT(m.awayTeam?.name||'');
+
+  // Try group stage LOOKUP first
+  let fm = LOOKUP[`${hn}|||${an}`];
+
+  // Try KO matches dynamically
   if (!fm) {
-    console.warn('NOMATCH:', m.homeTeam?.name, 'vs', m.awayTeam?.name, m.status);
+    for (const matchId of Object.keys(KO_BRACKET)) {
+      const entry = koLookupKey(matchId);
+      if (!entry) continue;
+      if (entry.key1 === `${hn}|||${an}`) { fm = { id:matchId, hi:true }; break; }
+      if (entry.key2 === `${hn}|||${an}`) { fm = { id:matchId, hi:false }; break; }
+    }
+  }
+
+  if (!fm) {
+    console.warn('NOMATCH:', hn, 'vs', an, m.status);
     return;
   }
 
-  // Score logic:
-  // - KO matches (extra time possible): use fullTime which includes ET goals
-  // - Group stage: regularTime is fine (no ET)
-  // - Penalties are shown separately via pens object
   const isKO = fm.id.startsWith('M');
   let home, away;
   if (isKO) {
@@ -136,18 +202,19 @@ function processMatch(m, scores, liveIds, minutes, pens, goals) {
   if (home == null || away == null) { home = 0; away = 0; }
 
   scores[fm.id] = fm.hi ? [home, away] : [away, home];
+  if (isKO) koScores[fm.id] = scores[fm.id];
 
   if (isLive) {
     if (!liveIds.includes(fm.id)) liveIds.push(fm.id);
     if (m.minute != null) minutes[fm.id] = m.minute + (m.injuryTime||0);
   }
 
-  // Penalty shootout info (knockout stage only)
   if (m.score?.duration === 'PENALTY_SHOOTOUT' && m.score?.penalties) {
     const ph = m.score.penalties.home;
     const pa = m.score.penalties.away;
     if (ph != null && pa != null) {
       pens[fm.id] = fm.hi ? [ph, pa] : [pa, ph];
+      if (isKO) koPens[fm.id] = pens[fm.id];
     }
   }
 }
@@ -160,11 +227,9 @@ export default async function handler(req, res) {
   try {
     const scores={}, liveIds=[], minutes={}, pens={};
 
-    // Call 1 — all matches
     const d1 = await get('/competitions/WC/matches');
     for (const m of d1.matches||[]) processMatch(m, scores, liveIds, minutes, pens);
 
-    // Call 2 — top scorers
     const sd = await get('/competitions/WC/scorers?limit=20');
     const scorers = (sd.scorers||[]).map(s => ({
       name:      s.player?.name || '?',
