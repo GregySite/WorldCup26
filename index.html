@@ -354,7 +354,7 @@ const KO_MATCHES=[
   {id:"M87",date:"04/07",city:"Kansas City", h:"Colombia",          a:"Ghana",              ph:3, pm:30,round:"R32",label:"M87",hl:"https://www.fifa.com/en/articles/colombia-ghana-match-report-highlights"},
   // Round of 16
   {id:"M90",date:"04/07",city:"Houston",      h:"Canada",a:"W75",  ph:19,pm:0, round:"R16",label:"M90",hl:"https://www.fifa.com/en/articles/canada-morocco-match-report-highlights"},
-  {id:"M89",date:"04/07",city:"Philadelphia", h:"W74",   a:"W77",  ph:23,pm:0, round:"R16",label:"M89",hl:"https://www.fifa.com/en/articles/paraguay-france-match-report-highlights"},
+  {id:"M89",date:"04/07",city:"Philadelphia", h:"W74",   a:"W77",  ph:23,pm:0, round:"R16",label:"M89",hl:"https://www.fifa.com/en/articles/paraguay-france-match-report-highlights",pen_goal:"a"},
   {id:"M91",date:"05/07",city:"E.Rutherford", h:"W76",   a:"W78",  ph:22,pm:0, round:"R16",label:"M91",hl:"https://www.fifa.com/en/articles/brazil-norway-match-report-highlights"},
   {id:"M92",date:"06/07",city:"Mexico City",  h:"W79",   a:"W80",  ph:2, pm:0, round:"R16",label:"M92",hl:"https://www.fifa.com/en/articles/mexico-england-match-report-highlights"},
   {id:"M93",date:"06/07",city:"Dallas",       h:"W83",   a:"W84",  ph:21,pm:0, round:"R16",label:"M93",hl:"https://www.fifa.com/en/articles/portugal-spain-match-report-highlights"},
@@ -778,6 +778,7 @@ function mkM(h,a,date,label,time,matchId,city){
   const pen=matchId?LIVE.pens?.[matchId]:null;
   const ko=matchId?KO_MATCHES.find(x=>x.label===matchId):null;
   const hlUrl=ko?.hl||null;
+  const penGoal=ko?.pen_goal||null; // 'h' or 'a' = which team scored a penalty goal
 
   const ts=(n,score)=>{
     if(!n) return`<span style="font-size:.72rem;color:var(--t3);font-style:italic">TBD</span>`;
@@ -804,6 +805,7 @@ function mkM(h,a,date,label,time,matchId,city){
       <div style="display:flex;align-items:center;gap:.4rem">
         <span style="font-size:.68rem;color:var(--green);font-weight:700">✓ FT${pen?' (pens)':''}</span>
         ${pen?`<span style="font-size:.68rem;color:var(--gold);font-weight:700">⚽ ${pen[0]}–${pen[1]} pen.</span>`:''}
+        ${penGoal?`<span style="font-size:.6rem;color:var(--t2)">${penGoal==='h'?'('+h+' scored pen.)':'('+a+' scored pen.)'}</span>`:''}
       </div>
       ${s&&hlUrl?`<a href="${hlUrl}" target="_blank" rel="noopener" style="font-size:.62rem;background:rgba(255,59,48,.12);color:#ff6b6b;padding:2px 7px;border-radius:4px;border:1px solid rgba(255,59,48,.3);text-decoration:none;white-space:nowrap;font-weight:600">▶ Highlights</a>`:''}
     </div>`;
