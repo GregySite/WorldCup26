@@ -1190,10 +1190,11 @@ function RS(){
   KO_MATCHES.forEach(m=>{
     const s=sc(m.id);
     if(!s)return;
+    const hName=resolveTeam(m.h)||m.h;
+    const aName=resolveTeam(m.a)||m.a;
     koPlayed++;koGoals+=s[0]+s[1];goals+=s[0]+s[1];
-    if(s[0]+s[1]>maxG){maxG=s[0]+s[1];maxM={label:`${m.round} · ${m.h} vs ${m.a}`,s}}
-    // Count KO prediction accuracy too
-    const hStr=STR[m.h],aStr=STR[m.a];
+    if(s[0]+s[1]>maxG){maxG=s[0]+s[1];maxM={label:`${m.round} · ${hName} vs ${aName}`,s}}
+    const hStr=STR[hName],aStr=STR[aName];
     if(hStr&&aStr){
       const p=pred(hStr,aStr);
       const rr=s[0]>s[1]?'H':s[0]<s[1]?'A':'D';
@@ -1231,11 +1232,12 @@ function RS(){
   KO_MATCHES.forEach(m=>{
     const s=sc(m.id),live=isLive(m.id);
     if(!s)return;
+    const hName=resolveTeam(m.h)||m.h;
+    const aName=resolveTeam(m.a)||m.a;
     const pen=LIVE.pens?.[m.id];
     const scoreStr=pen?`${s[0]}–${s[1]} (pens ${pen[0]}–${pen[1]})`:s[0]+'–'+s[1];
-    // Prediction using STR model (only if both teams are known real names)
     let predHtml='',badge='';
-    const hStr=STR[m.h],aStr=STR[m.a];
+    const hStr=STR[hName],aStr=STR[aName];
     if(hStr&&aStr){
       const p=pred(hStr,aStr);
       predHtml=`<span style="color:var(--gold)">🔮 ${p[0]}–${p[1]}</span>`;
@@ -1247,7 +1249,7 @@ function RS(){
         else badge='<span class="pbg pw">✗</span>';
       }
     }
-    rows.push(`<div class="pr"><span style="color:var(--t2);font-size:.72rem">${m.round} · ${m.h} vs ${m.a}</span><span style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">${predHtml}<span style="color:${live?'var(--red)':'var(--green)'};font-weight:700">${live?'● ':''} ${scoreStr}</span>${badge}</span></div>`);
+    rows.push(`<div class="pr"><span style="color:var(--t2);font-size:.72rem">${m.round} · ${hName} vs ${aName}</span><span style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">${predHtml}<span style="color:${live?'var(--red)':'var(--green)'};font-weight:700">${live?'● ':''} ${scoreStr}</span>${badge}</span></div>`);
   });
 
   pt.innerHTML=rows.length?`<div class="pt2">${rows.join('')}</div>`:'<div style="color:var(--t3);text-align:center;padding:1.2rem;font-size:.8rem">Results appear here automatically as matches are played.</div>';
