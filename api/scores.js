@@ -1,5 +1,5 @@
-// Vercel Serverless Function — World Cup 2026 v2
-// football-data.org free plan — 2 calls only
+// Vercel Serverless Function — World Cup 2026
+// Fully dynamic KO bracket resolution
 
 const KEY  = process.env.FOOTBALLDATA_KEY;
 const BASE = 'https://api.football-data.org/v4';
@@ -9,7 +9,6 @@ const TEAM_MAP = {
   'Bosnia and Herzegovina':'Bosnia-Herzegovina',
   'United States':'USA','Türkiye':'Turkey',
   "Côte d'Ivoire":'Ivory Coast',"Cote d'Ivoire":'Ivory Coast',
-  "Cote d'Ivoire":'Ivory Coast',
   'IR Iran':'Iran',
   'Cabo Verde':'Cape Verde','Cape Verde Islands':'Cape Verde',
   'Congo DR':'DR Congo','Democratic Republic of Congo':'DR Congo','Congo, DR':'DR Congo',
@@ -22,7 +21,7 @@ async function get(path) {
   return r.json();
 }
 
-// Build LOOKUP from raw arrays
+// Group stage LOOKUP
 const LOOKUP = (() => {
   const raw = [
     ['A','Mexico','South Africa'],        ['A','South Korea','Czech Republic'],
@@ -64,17 +63,17 @@ const LOOKUP = (() => {
   ];
   const gc={}, map={};
   for (const [g,h,a] of raw) {
-    gc[g] = (gc[g]||0);
-    const id = `${g}-${gc[g]++}`;
-    map[`${h}|||${a}`] = { id, hi:true  };
-    map[`${a}|||${h}`] = { id, hi:false };
+    gc[g]=(gc[g]||0);
+    const id=`${g}-${gc[g]++}`;
+    map[`${h}|||${a}`]={id,hi:true};
+    map[`${a}|||${h}`]={id,hi:false};
   }
   return map;
 })();
 
-// KO bracket — real team names updated as tournament progresses
-const KO_BRACKET = {
-  // R32
+// KO bracket tree — W/L labels resolved dynamically from scores
+const KO_TREE = {
+  // R32 — real teams
   'M73':['South Africa','Canada'],
   'M74':['Germany','Paraguay'],
   'M75':['Netherlands','Morocco'],
@@ -91,69 +90,105 @@ const KO_BRACKET = {
   'M86':['Argentina','Cape Verde'],
   'M87':['Colombia','Ghana'],
   'M88':['Australia','Egypt'],
-  // R16 — actual teams
-  'M89':['Paraguay','France'],
-  'M90':['Canada','Morocco'],
-  'M91':['Brazil','Norway'],
-  'M92':['Mexico','England'],
-  'M93':['Portugal','Spain'],
-  'M94':['USA','Belgium'],
-  'M95':['Argentina','Egypt'],
-  'M96':['Switzerland','Colombia'],
-  // QF — resolved from R16 winners
-  'M97':['France','Morocco'],
-  'M99':['Brazil','Mexico'],
-  'M98':['Portugal','USA'],
-  'M100':['Argentina','Switzerland'],
-  // SF — resolved from QF winners (update after QF)
-  'M101':['France','Brazil'],
-  'M102':['Portugal','Argentina'],
+  // R16 — resolved from R32
+  'M89':['W74','W77'],
+  'M90':['W73','W75'],
+  'M91':['W76','W78'],
+  'M92':['W79','W80'],
+  'M93':['W83','W84'],
+  'M94':['W81','W82'],
+  'M95':['W86','W88'],
+  'M96':['W85','W87'],
+  // QF — resolved from R16
+  'M97':['W89','W90'],
+  'M99':['W91','W92'],
+  'M98':['W93','W94'],
+  'M100':['W95','W96'],
+  // SF — resolved from QF
+  'M101':['W97','W99'],
+  'M102':['W98','W100'],
   // 3rd & Final
-  'M103':['Paraguay','Morocco'],
-  'M104':['France','Portugal'],
+  'M103':['L101','L102'],
+  'M104':['W101','W102'],
 };
+
+// Collected scores to resolve winners
+const collectedScores = {};
+const collectedPens   = {};
+
+function getWinner(matchId) {
+  const s = collectedScores[matchId];
+  if (!s) return null;
+  const [h, a] = resolveTeams(matchId);
+  if (!h || !a) return null;
+  if (s[0] > s[1]) return h;
+  if (s[1] > s[0]) return a;
+  const p = collectedPens[matchId];
+  if (p) { if (p[0] > p[1]) return h; if (p[1] > p[0]) return a; }
+  return null;
+}
+
+function getLoser(matchId) {
+  const w = getWinner(matchId);
+  if (!w) return null;
+  const [h, a] = resolveTeams(matchId);
+  return w === h ? a : h;
+}
+
+function resolveLabel(label, depth=0) {
+  if (!label || depth > 8) return null;
+  if (!label.startsWith('W') && !label.startsWith('L')) return label;
+  const mid = label.replace(/^[WL]/, 'M');
+  if (label.startsWith('W')) return getWinner(mid) || null;
+  return getLoser(mid) || null;
+}
+
+function resolveTeams(matchId, depth=0) {
+  const tree = KO_TREE[matchId];
+  if (!tree) return [null, null];
+  return tree.map(t => (t.startsWith('W') || t.startsWith('L'))
+    ? resolveLabel(t, depth+1)
+    : t
+  );
+}
 
 function processMatch(m, scores, liveIds, minutes, pens) {
   const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status);
-  const isDone = m.status === 'FINISHED';
+  const isDone  = m.status === 'FINISHED';
   if (!isLive && !isDone) return;
 
   const hn = mapT(m.homeTeam?.name||'');
   const an = mapT(m.awayTeam?.name||'');
 
-  // Try group stage LOOKUP first
+  // 1. Try group stage LOOKUP
   let fm = LOOKUP[`${hn}|||${an}`];
 
-  // Try KO bracket directly
+  // 2. Try KO tree — resolve all possible matchups
   if (!fm) {
-    for (const [matchId, [h, a]] of Object.entries(KO_BRACKET)) {
-      if ((h===hn&&a===an)||(h===an&&a===hn)) {
-        fm = { id:matchId, hi: h===hn };
-        break;
-      }
+    for (const matchId of Object.keys(KO_TREE)) {
+      const [rh, ra] = resolveTeams(matchId);
+      if (!rh || !ra) continue;
+      if (rh===hn && ra===an) { fm = {id:matchId, hi:true};  break; }
+      if (ra===hn && rh===an) { fm = {id:matchId, hi:false}; break; }
     }
   }
 
-  if (!fm) {
-    console.warn('NOMATCH:', hn, 'vs', an, m.status);
-    return;
-  }
+  if (!fm) { console.warn('NOMATCH:', hn, 'vs', an); return; }
 
-  const isKO = fm.id.startsWith('M');
-  let home, away;
-  if (isKO) {
-    home = m.score?.fullTime?.home ?? m.score?.regularTime?.home;
-    away = m.score?.fullTime?.away ?? m.score?.regularTime?.away;
-  } else {
-    home = m.score?.regularTime?.home ?? m.score?.fullTime?.home;
-    away = m.score?.regularTime?.away ?? m.score?.fullTime?.away;
-  }
+  const isKO = fm.id.startsWith('M') && !fm.id.match(/^[A-L]-/);
+  let home = isKO
+    ? (m.score?.fullTime?.home   ?? m.score?.regularTime?.home)
+    : (m.score?.regularTime?.home ?? m.score?.fullTime?.home);
+  let away = isKO
+    ? (m.score?.fullTime?.away   ?? m.score?.regularTime?.away)
+    : (m.score?.regularTime?.away ?? m.score?.fullTime?.away);
 
   if (home == null && isDone) home = 0;
   if (away == null && isDone) away = 0;
   if (home == null || away == null) { home = 0; away = 0; }
 
   scores[fm.id] = fm.hi ? [home, away] : [away, home];
+  if (isKO) collectedScores[fm.id] = scores[fm.id];
 
   if (isLive) {
     if (!liveIds.includes(fm.id)) liveIds.push(fm.id);
@@ -164,7 +199,8 @@ function processMatch(m, scores, liveIds, minutes, pens) {
     const ph = m.score.penalties.home;
     const pa = m.score.penalties.away;
     if (ph != null && pa != null) {
-      pens[fm.id] = fm.hi ? [ph, pa] : [pa, ph];
+      pens[fm.id]   = fm.hi ? [ph, pa] : [pa, ph];
+      if (isKO) collectedPens[fm.id] = pens[fm.id];
     }
   }
 }
@@ -172,7 +208,7 @@ function processMatch(m, scores, liveIds, minutes, pens) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 's-maxage=25, stale-while-revalidate=30');
-  if (!KEY) return res.status(500).json({ error: 'FOOTBALLDATA_KEY not set' });
+  if (!KEY) return res.status(500).json({error:'FOOTBALLDATA_KEY not set'});
 
   try {
     const scores={}, liveIds=[], minutes={}, pens={};
@@ -200,6 +236,6 @@ export default async function handler(req, res) {
 
   } catch(e) {
     console.error(e);
-    return res.status(502).json({ error: e.message });
+    return res.status(502).json({error:e.message});
   }
 }
