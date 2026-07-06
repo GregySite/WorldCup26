@@ -208,36 +208,38 @@ function processMatch(m, scores, liveIds, minutes, pens) {
 const ZAFRONIX_KEY = process.env.ZAFRONIX_KEY;
 const ZAFRONIX_BASE = 'https://api.zafronix.com/fifa/worldcup/v1';
 
+// In-memory cache for Zafronix goals (persists across warm Vercel invocations)
+const goalsCache = {};
+
 async function getZafronixGoals(finishedIds) {
-  if (!ZAFRONIX_KEY || finishedIds.length === 0) return {};
-  try {
-    // Single bulk call — one request for all 2026 matches
-    const r = await fetch(`${ZAFRONIX_BASE}/matches?year=2026`, {
-      headers: { 'X-API-Key': ZAFRONIX_KEY }
-    });
-    if (!r.ok) return {};
-    const data = await r.json();
-    const matches = data.data || data.matches || (Array.isArray(data) ? data : []);
-    const noMap = {};
-    finishedIds.forEach(x => { noMap[x.matchNo] = x.id; });
-    const goals = {};
-    for (const m of matches) {
-      if (!m.goals || m.goals.length === 0) continue;
-      const ourId = noMap[m.matchNo];
-      if (!ourId) continue;
-      goals[ourId] = m.goals.map(g => ({
+  if (!ZAFRONIX_KEY || finishedIds.length === 0) return goalsCache;
+  
+  // Only fetch matches NOT already in cache
+  const missing = finishedIds.filter(x => !goalsCache[x.id]);
+  
+  // Fetch max 5 at a time to avoid timeouts and rate limits
+  const toFetch = missing.slice(0, 5);
+  
+  await Promise.all(toFetch.map(async ({matchNo, id}) => {
+    try {
+      const r = await fetch(
+        `${ZAFRONIX_BASE}/matches/2026-${String(matchNo).padStart(3,'0')}`,
+        { headers: { 'X-API-Key': ZAFRONIX_KEY } }
+      );
+      if (!r.ok) return;
+      const data = await r.json();
+      // Cache even empty arrays so we don't retry
+      goalsCache[id] = (data.goals||[]).map(g => ({
         minute: g.minute,
         added:  g.addedMinute || 0,
         scorer: g.scorer,
         team:   g.team,
         type:   g.type || null,
       }));
-    }
-    return goals;
-  } catch(e) {
-    console.warn('Zafronix error:', e.message);
-    return {};
-  }
+    } catch(e) {}
+  }));
+  
+  return goalsCache;
 }
 
 export default async function handler(req, res) {
