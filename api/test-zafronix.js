@@ -4,25 +4,24 @@ const BASE = 'https://api.zafronix.com/fifa/worldcup/v1';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  try {
-    const r = await fetch(`${BASE}/matches?year=2026`, {
-      headers: { 'X-API-Key': KEY }
-    });
-    const data = await r.json();
-    // Show structure: top-level keys and first match
-    const matches = data.data || data.matches || (Array.isArray(data) ? data : []);
-    return res.status(200).json({
-      topKeys: Object.keys(data),
-      totalMatches: matches.length,
-      firstMatch: matches[0] ? {
-        id: matches[0].id,
-        matchNo: matches[0].matchNo,
-        homeTeam: matches[0].homeTeam,
-        awayTeam: matches[0].awayTeam,
-        goals: matches[0].goals,
-      } : null
-    });
-  } catch(e) {
-    return res.status(500).json({ error: e.message });
+  const matchNos = [73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96];
+  const results = {};
+  for (const no of matchNos) {
+    try {
+      const r = await fetch(`${BASE}/matches/2026-${String(no).padStart(3,'0')}`, {
+        headers: { 'X-API-Key': KEY }
+      });
+      const d = await r.json();
+      if (d.status === 'finished' && d.goals) {
+        results[`M${no}`] = d.goals.map(g => ({
+          minute: g.minute,
+          added: g.addedMinute || 0,
+          scorer: g.scorer,
+          team: g.team,
+          type: g.type || null
+        }));
+      }
+    } catch(e) {}
   }
+  return res.status(200).json(results);
 }
