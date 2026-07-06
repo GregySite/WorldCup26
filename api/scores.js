@@ -205,6 +205,38 @@ function processMatch(m, scores, liveIds, minutes, pens) {
   }
 }
 
+const ZAFRONIX_KEY = process.env.ZAFRONIX_KEY;
+const ZAFRONIX_BASE = 'https://api.zafronix.com/fifa/worldcup/v1';
+
+async function getZafronixGoals(matchNos) {
+  if (!ZAFRONIX_KEY || matchNos.length === 0) return {};
+  const goals = {};
+  // Fetch all finished matches in parallel (max 10 at a time to stay within rate limits)
+  const chunks = [];
+  for (let i = 0; i < matchNos.length; i += 10) chunks.push(matchNos.slice(i, i+10));
+  
+  for (const chunk of chunks) {
+    await Promise.all(chunk.map(async ({matchNo, id, hi}) => {
+      try {
+        const r = await fetch(`${ZAFRONIX_BASE}/matches/2026-${String(matchNo).padStart(3,'0')}`, {
+          headers: { 'X-API-Key': ZAFRONIX_KEY }
+        });
+        if (!r.ok) return;
+        const data = await r.json();
+        if (!data.goals || data.goals.length === 0) return;
+        goals[id] = data.goals.map(g => ({
+          minute: g.minute,
+          added:  g.addedMinute || 0,
+          scorer: g.scorer,
+          team:   g.team, // 'home' or 'away'
+          hi,             // whether our stored score is home-first
+        }));
+      } catch(e) { /* ignore individual failures */ }
+    }));
+  }
+  return goals;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 's-maxage=25, stale-while-revalidate=30');
@@ -225,12 +257,37 @@ export default async function handler(req, res) {
       penalties: s.penalties ?? 0,
     }));
 
+    // Get goals/scorers from Zafronix for all finished matches
+    // Map our match IDs to Zafronix match numbers
+    const MATCH_NOS = {
+      // R32
+      'M73':73,'M74':74,'M75':75,'M76':76,'M77':77,'M78':78,
+      'M79':79,'M80':80,'M81':81,'M82':82,'M83':83,'M84':84,
+      'M85':85,'M86':86,'M87':87,'M88':88,
+      // R16
+      'M89':89,'M90':90,'M91':91,'M92':92,'M93':93,'M94':94,'M95':95,'M96':96,
+      // QF
+      'M97':97,'M98':98,'M99':99,'M100':100,
+      // SF
+      'M101':101,'M102':102,
+      // Final
+      'M103':103,'M104':104,
+    };
+
+    // Only fetch goals for finished matches
+    const finishedKO = Object.entries(MATCH_NOS)
+      .filter(([id]) => scores[id] !== undefined && !liveIds.includes(id))
+      .map(([id, matchNo]) => ({id, matchNo, hi: true}));
+
+    const goals = await getZafronixGoals(finishedKO);
+
     return res.status(200).json({
       updated: new Date().toISOString(),
       matches: scores,
       live:    liveIds,
       minutes,
       pens,
+      goals,
       scorers,
     });
 
