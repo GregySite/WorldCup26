@@ -205,42 +205,30 @@ function processMatch(m, scores, liveIds, minutes, pens) {
   }
 }
 
-const ZAFRONIX_KEY = process.env.ZAFRONIX_KEY;
-const ZAFRONIX_BASE = 'https://api.zafronix.com/fifa/worldcup/v1';
+// ── Hardcoded goals data (from Zafronix, updated as tournament progresses) ──
+const GOALS_DATA = {
+  'M73':[{minute:90,added:2,scorer:"Eustáquio",team:"away",type:null}],
+  'M74':[{minute:42,added:0,scorer:"Enciso",team:"away",type:null},{minute:54,added:0,scorer:"Havertz",team:"home",type:null}],
+  'M75':[{minute:72,added:0,scorer:"Gakpo",team:"home",type:null},{minute:90,added:1,scorer:"Diop",team:"away",type:null}],
+  'M76':[{minute:29,added:0,scorer:"Sano",team:"away",type:null},{minute:56,added:0,scorer:"Casemiro",team:"home",type:null},{minute:90,added:5,scorer:"Martinelli",team:"home",type:null}],
+  'M77':[{minute:45,added:0,scorer:"Mbappé",team:"home",type:null},{minute:53,added:0,scorer:"Barcola",team:"home",type:null},{minute:74,added:0,scorer:"Mbappé",team:"home",type:null}],
+  'M78':[{minute:39,added:0,scorer:"Nusa",team:"away",type:null},{minute:74,added:0,scorer:"Diallo",team:"home",type:null},{minute:86,added:0,scorer:"Haaland",team:"away",type:null}],
+  'M79':[{minute:22,added:0,scorer:"Quiñones",team:"home",type:null},{minute:31,added:0,scorer:"Jiménez",team:"home",type:null}],
+  'M80':[{minute:7,added:0,scorer:"Cipenga",team:"away",type:null},{minute:75,added:0,scorer:"Kane",team:"home",type:null},{minute:86,added:0,scorer:"Kane",team:"home",type:null}],
+  'M81':[{minute:45,added:0,scorer:"Balogun",team:"home",type:null},{minute:82,added:0,scorer:"Tillman",team:"home",type:null}],
+  'M82':[{minute:25,added:0,scorer:"Diarra",team:"away",type:null},{minute:51,added:0,scorer:"I. Sarr",team:"away",type:null},{minute:86,added:0,scorer:"Lukaku",team:"home",type:null},{minute:89,added:0,scorer:"Tielemans",team:"home",type:null},{minute:120,added:5,scorer:"Tielemans",team:"home",type:"penalty"}],
+  'M83':[{minute:53,added:0,scorer:"Perišić",team:"away",type:null},{minute:68,added:0,scorer:"Ronaldo",team:"home",type:"penalty"},{minute:90,added:4,scorer:"Ramos",team:"home",type:null}],
+  'M84':[{minute:36,added:0,scorer:"Oyarzabal",team:"home",type:null},{minute:66,added:0,scorer:"Porro",team:"home",type:null},{minute:89,added:0,scorer:"Oyarzabal",team:"home",type:null}],
+  'M85':[{minute:10,added:0,scorer:"Embolo",team:"home",type:null},{minute:46,added:0,scorer:"Ndoye",team:"home",type:null}],
+  'M86':[{minute:29,added:0,scorer:"Messi",team:"home",type:null},{minute:59,added:0,scorer:"D. Duarte",team:"away",type:null},{minute:92,added:0,scorer:"Li. Martínez",team:"home",type:null},{minute:103,added:0,scorer:"Lopes Cabral",team:"away",type:null},{minute:111,added:0,scorer:"Diney",team:"home",type:"own_goal"}],
+  'M87':[{minute:14,added:0,scorer:"J. Arias",team:"home",type:null}],
+  'M88':[{minute:13,added:0,scorer:"Ashour",team:"away",type:null},{minute:55,added:0,scorer:"Hany",team:"home",type:"own_goal"}],
+  'M89':[{minute:70,added:0,scorer:"Mbappé",team:"away",type:"penalty"}],
+  'M90':[{minute:50,added:0,scorer:"Ounahi",team:"away",type:null},{minute:82,added:0,scorer:"Ounahi",team:"away",type:null},{minute:90,added:8,scorer:"Rahimi",team:"away",type:null}],
+  'M91':[{minute:79,added:0,scorer:"Haaland",team:"away",type:null},{minute:90,added:0,scorer:"Haaland",team:"away",type:null},{minute:90,added:10,scorer:"Neymar",team:"home",type:"penalty"}],
+  'M92':[{minute:36,added:0,scorer:"Bellingham",team:"away",type:null},{minute:38,added:0,scorer:"Bellingham",team:"away",type:null},{minute:42,added:0,scorer:"Quiñones",team:"home",type:null},{minute:60,added:0,scorer:"Kane",team:"away",type:"penalty"},{minute:69,added:0,scorer:"Jiménez",team:"home",type:"penalty"}],
+};
 
-// In-memory cache for Zafronix goals (persists across warm Vercel invocations)
-const goalsCache = {};
-
-async function getZafronixGoals(finishedIds) {
-  if (!ZAFRONIX_KEY || finishedIds.length === 0) return goalsCache;
-  
-  // Only fetch matches NOT already in cache
-  const missing = finishedIds.filter(x => !goalsCache[x.id]);
-  
-  // Fetch max 5 at a time to avoid timeouts and rate limits
-  const toFetch = missing.slice(0, 5);
-  
-  await Promise.all(toFetch.map(async ({matchNo, id}) => {
-    try {
-      const r = await fetch(
-        `${ZAFRONIX_BASE}/matches/2026-${String(matchNo).padStart(3,'0')}`,
-        { headers: { 'X-API-Key': ZAFRONIX_KEY } }
-      );
-      if (!r.ok) return;
-      const data = await r.json();
-      // Cache even empty arrays so we don't retry
-      goalsCache[id] = (data.goals||[]).map(g => ({
-        minute: g.minute,
-        added:  g.addedMinute || 0,
-        scorer: g.scorer,
-        team:   g.team,
-        type:   g.type || null,
-      }));
-    } catch(e) {}
-  }));
-  
-  return goalsCache;
-}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -262,29 +250,8 @@ export default async function handler(req, res) {
       penalties: s.penalties ?? 0,
     }));
 
-    // Get goals/scorers from Zafronix for all finished matches
-    // Map our match IDs to Zafronix match numbers
-    const MATCH_NOS = {
-      // R32
-      'M73':73,'M74':74,'M75':75,'M76':76,'M77':77,'M78':78,
-      'M79':79,'M80':80,'M81':81,'M82':82,'M83':83,'M84':84,
-      'M85':85,'M86':86,'M87':87,'M88':88,
-      // R16
-      'M89':89,'M90':90,'M91':91,'M92':92,'M93':93,'M94':94,'M95':95,'M96':96,
-      // QF
-      'M97':97,'M98':98,'M99':99,'M100':100,
-      // SF
-      'M101':101,'M102':102,
-      // Final
-      'M103':103,'M104':104,
-    };
-
-    // Only fetch goals for finished matches
-    const finishedKO = Object.entries(MATCH_NOS)
-      .filter(([id]) => scores[id] !== undefined && !liveIds.includes(id))
-      .map(([id, matchNo]) => ({id, matchNo, hi: true}));
-
-    const goals = await getZafronixGoals(finishedKO);
+    // Goals are hardcoded in GOALS_DATA — no API call needed
+    const goals = GOALS_DATA;
 
     return res.status(200).json({
       updated: new Date().toISOString(),
