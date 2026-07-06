@@ -788,9 +788,20 @@ function mkM(h,a,date,label,time,matchId,city){
     if(isPending) return`<div style="display:flex;align-items:center;justify-content:space-between;width:100%">
       <span style="font-size:.58rem;color:var(--t3)">${n}</span>
     </div>`;
-    return`<div class="kt-team" data-team="${n}" style="display:flex;align-items:center;justify-content:space-between;width:100%;${winner?'background:rgba(77,166,255,.08)':''}">
-      <div style="display:flex;align-items:center;gap:.3rem">${fl(n,'fl fl-sm')}<span style="font-size:.82rem;font-weight:${winner?800:500};color:${winner?'#4da6ff':'var(--text)'}">${n}</span></div>
-      ${score!==null?`<span style="font-size:1rem;font-weight:800;color:${live?'var(--red)':winner?'#4da6ff':'var(--t2)'}">${score}</span>`:''}
+    // Goals for this specific team
+    const teamSide=(n===h)?'home':'away';
+    const teamGoals=matchGoals?matchGoals.filter(g=>g.team===teamSide):[];
+    const goalsStr=teamGoals.map(g=>{
+      const min=g.added?`${g.minute}+${g.added}'`:`${g.minute}'`;
+      const name=g.scorer.split(' ').pop();
+      return `${min} ${name}`;
+    }).join('  ');
+    return`<div class="kt-team" data-team="${n}" style="width:100%;${winner?'background:rgba(77,166,255,.08)':''}">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0">
+        <div style="display:flex;align-items:center;gap:.3rem">${fl(n,'fl fl-sm')}<span style="font-size:.82rem;font-weight:${winner?800:500};color:${winner?'#4da6ff':'var(--text)'}">${n}</span></div>
+        ${score!==null?`<span style="font-size:1rem;font-weight:800;color:${live?'var(--red)':winner?'#4da6ff':'var(--t2)'}">${score}</span>`:''}
+      </div>
+      ${goalsStr?`<div style="font-size:.6rem;color:var(--t3);padding-left:1.4rem;margin-top:.05rem">${goalsStr}</div>`:''}
     </div>`;
   };
 
@@ -821,7 +832,7 @@ function mkM(h,a,date,label,time,matchId,city){
         </div>
         ${s&&hlUrl?`<a href="${hlUrl}" target="_blank" rel="noopener" style="font-size:.62rem;background:rgba(255,59,48,.12);color:#ff6b6b;padding:2px 7px;border-radius:4px;border:1px solid rgba(255,59,48,.3);text-decoration:none;white-space:nowrap;font-weight:600">▶ Highlights</a>`:''}
       </div>
-      ${goalsLine?`<div style="margin-top:.2rem;display:flex;flex-wrap:wrap;gap:3px;align-items:center">${goalsLine}</div>`:''}
+      ${goalsLine?'':`<!-- goals now shown per team -->`}
     </div>`;
   }
 
