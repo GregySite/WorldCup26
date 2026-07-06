@@ -228,8 +228,9 @@ async function getZafronixGoals(matchNos) {
           minute: g.minute,
           added:  g.addedMinute || 0,
           scorer: g.scorer,
-          team:   g.team, // 'home' or 'away'
-          hi,             // whether our stored score is home-first
+          team:   g.team,
+          type:   g.type || null, // 'penalty', 'own_goal', null = regular
+          hi,
         }));
       } catch(e) { /* ignore individual failures */ }
     }));
