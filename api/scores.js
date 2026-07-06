@@ -208,34 +208,36 @@ function processMatch(m, scores, liveIds, minutes, pens) {
 const ZAFRONIX_KEY = process.env.ZAFRONIX_KEY;
 const ZAFRONIX_BASE = 'https://api.zafronix.com/fifa/worldcup/v1';
 
-async function getZafronixGoals(matchNos) {
-  if (!ZAFRONIX_KEY || matchNos.length === 0) return {};
-  const goals = {};
-  // Fetch all finished matches in parallel (max 10 at a time to stay within rate limits)
-  const chunks = [];
-  for (let i = 0; i < matchNos.length; i += 10) chunks.push(matchNos.slice(i, i+10));
-  
-  for (const chunk of chunks) {
-    await Promise.all(chunk.map(async ({matchNo, id, hi}) => {
-      try {
-        const r = await fetch(`${ZAFRONIX_BASE}/matches/2026-${String(matchNo).padStart(3,'0')}`, {
-          headers: { 'X-API-Key': ZAFRONIX_KEY }
-        });
-        if (!r.ok) return;
-        const data = await r.json();
-        if (!data.goals || data.goals.length === 0) return;
-        goals[id] = data.goals.map(g => ({
-          minute: g.minute,
-          added:  g.addedMinute || 0,
-          scorer: g.scorer,
-          team:   g.team,
-          type:   g.type || null, // 'penalty', 'own_goal', null = regular
-          hi,
-        }));
-      } catch(e) { /* ignore individual failures */ }
-    }));
+async function getZafronixGoals(finishedIds) {
+  if (!ZAFRONIX_KEY || finishedIds.length === 0) return {};
+  try {
+    // Single bulk call — one request for all 2026 matches
+    const r = await fetch(`${ZAFRONIX_BASE}/matches?year=2026`, {
+      headers: { 'X-API-Key': ZAFRONIX_KEY }
+    });
+    if (!r.ok) return {};
+    const data = await r.json();
+    const matches = data.data || data.matches || (Array.isArray(data) ? data : []);
+    const noMap = {};
+    finishedIds.forEach(x => { noMap[x.matchNo] = x.id; });
+    const goals = {};
+    for (const m of matches) {
+      if (!m.goals || m.goals.length === 0) continue;
+      const ourId = noMap[m.matchNo];
+      if (!ourId) continue;
+      goals[ourId] = m.goals.map(g => ({
+        minute: g.minute,
+        added:  g.addedMinute || 0,
+        scorer: g.scorer,
+        team:   g.team,
+        type:   g.type || null,
+      }));
+    }
+    return goals;
+  } catch(e) {
+    console.warn('Zafronix error:', e.message);
+    return {};
   }
-  return goals;
 }
 
 export default async function handler(req, res) {
