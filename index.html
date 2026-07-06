@@ -794,7 +794,8 @@ function mkM(h,a,date,label,time,matchId,city){
     const goalsStr=teamGoals.map(g=>{
       const min=g.added?`${g.minute}+${g.added}'`:`${g.minute}'`;
       const name=g.scorer.split(' ').pop();
-      return `${min} ${name}`;
+      const isPen=g.type==='penalty'?'<span style="font-size:.55rem;color:var(--gold)">(p)</span>':'';
+      return `${min} ${name} ${isPen}`;
     }).join('  ');
     return`<div class="kt-team" data-team="${n}" style="width:100%;${winner?'background:rgba(77,166,255,.08)':''}">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:0">
