@@ -227,6 +227,8 @@ const GOALS_DATA = {
   'M90':[{minute:50,added:0,scorer:"Ounahi",team:"away",type:null},{minute:82,added:0,scorer:"Ounahi",team:"away",type:null},{minute:90,added:8,scorer:"Rahimi",team:"away",type:null}],
   'M91':[{minute:79,added:0,scorer:"Haaland",team:"away",type:null},{minute:90,added:0,scorer:"Haaland",team:"away",type:null},{minute:90,added:10,scorer:"Neymar",team:"home",type:"penalty"}],
   'M92':[{minute:36,added:0,scorer:"Bellingham",team:"away",type:null},{minute:38,added:0,scorer:"Bellingham",team:"away",type:null},{minute:42,added:0,scorer:"Quiñones",team:"home",type:null},{minute:60,added:0,scorer:"Kane",team:"away",type:"penalty"},{minute:69,added:0,scorer:"Jiménez",team:"home",type:"penalty"}],
+  'M93':[{minute:90,added:1,scorer:"Merino",team:"away",type:null}],
+  'M94':[{minute:9,added:0,scorer:"De Ketelaere",team:"away",type:null},{minute:31,added:0,scorer:"Tillman",team:"home",type:null},{minute:33,added:0,scorer:"De Ketelaere",team:"away",type:null},{minute:57,added:0,scorer:"Vanaken",team:"away",type:null},{minute:90,added:3,scorer:"Lukaku",team:"away",type:null}],
 };
 
 
