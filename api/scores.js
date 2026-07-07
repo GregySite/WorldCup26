@@ -229,6 +229,7 @@ const GOALS_DATA = {
   'M92':[{minute:36,added:0,scorer:"Bellingham",team:"away",type:null},{minute:38,added:0,scorer:"Bellingham",team:"away",type:null},{minute:42,added:0,scorer:"Quiñones",team:"home",type:null},{minute:60,added:0,scorer:"Kane",team:"away",type:"penalty"},{minute:69,added:0,scorer:"Jiménez",team:"home",type:"penalty"}],
   'M93':[{minute:90,added:1,scorer:"Merino",team:"away",type:null}],
   'M94':[{minute:9,added:0,scorer:"De Ketelaere",team:"away",type:null},{minute:31,added:0,scorer:"Tillman",team:"home",type:null},{minute:33,added:0,scorer:"De Ketelaere",team:"away",type:null},{minute:57,added:0,scorer:"Vanaken",team:"away",type:null},{minute:90,added:3,scorer:"Lukaku",team:"away",type:null}],
+  'M95':[{minute:15,added:0,scorer:"Y. Ibrahim",team:"away",type:null},{minute:67,added:0,scorer:"Ziko",team:"away",type:null},{minute:79,added:0,scorer:"Romero",team:"home",type:null},{minute:83,added:0,scorer:"Messi",team:"home",type:null},{minute:90,added:3,scorer:"Fernández",team:"home",type:null}],
 };
 
 
