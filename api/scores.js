@@ -234,6 +234,11 @@ const GOALS_DATA = {
 };
 
 
+// ── Hardcoded penalty shootout overrides (football-data sometimes returns wrong values) ──
+const PENS_OVERRIDE = {
+  'M96': [4, 3], // Switzerland 4-3 Colombia (football-data returns 3-3 incorrectly)
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 's-maxage=25, stale-while-revalidate=30');
@@ -253,6 +258,9 @@ export default async function handler(req, res) {
       assists:   s.assists ?? 0,
       penalties: s.penalties ?? 0,
     }));
+
+    // Apply penalty shootout overrides
+    Object.assign(pens, PENS_OVERRIDE);
 
     // Goals are hardcoded in GOALS_DATA — no API call needed
     const goals = GOALS_DATA;
