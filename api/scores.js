@@ -99,11 +99,11 @@ const KO_TREE = {
   'M94':['W81','W82'],
   'M95':['W86','W88'],
   'M96':['W85','W87'],
-  // QF — resolved from R16
-  'M97':['W89','W90'],
-  'M99':['W91','W92'],
-  'M98':['W93','W94'],
-  'M100':['W95','W96'],
+  // QF — real teams from R16 results
+  'M97':['France','Morocco'],
+  'M99':['Norway','England'],
+  'M98':['Spain','Belgium'],
+  'M100':['Argentina','Switzerland'],
   // SF — resolved from QF
   'M101':['W97','W99'],
   'M102':['W98','W100'],
@@ -230,6 +230,7 @@ const GOALS_DATA = {
   'M93':[{minute:90,added:1,scorer:"Merino",team:"away",type:null}],
   'M94':[{minute:9,added:0,scorer:"De Ketelaere",team:"away",type:null},{minute:31,added:0,scorer:"Tillman",team:"home",type:null},{minute:33,added:0,scorer:"De Ketelaere",team:"away",type:null},{minute:57,added:0,scorer:"Vanaken",team:"away",type:null},{minute:90,added:3,scorer:"Lukaku",team:"away",type:null}],
   'M95':[{minute:15,added:0,scorer:"Y. Ibrahim",team:"away",type:null},{minute:67,added:0,scorer:"Ziko",team:"away",type:null},{minute:79,added:0,scorer:"Romero",team:"home",type:null},{minute:83,added:0,scorer:"Messi",team:"home",type:null},{minute:90,added:3,scorer:"Fernández",team:"home",type:null}],
+  'M96':[], // 0-0 après 120min, Switzerland gagne aux pens 4-3
 };
 
 
