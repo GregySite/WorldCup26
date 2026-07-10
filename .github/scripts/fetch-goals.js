@@ -7,7 +7,6 @@ const https = require('https');
 const KEY = process.env.ZAFRONIX_KEY;
 const BASE = 'api.zafronix.com';
 
-// Matchs KO avec leurs numéros Zafronix et fenêtres horaires UTC
 const KO_MATCHES = [
   { id: 'M97',  matchNo: 97,  start: new Date('2026-07-09T21:00:00Z') },
   { id: 'M98',  matchNo: 98,  start: new Date('2026-07-10T19:00:00Z') },
@@ -22,11 +21,7 @@ const KO_MATCHES = [
 function fetchMatch(matchNo) {
   return new Promise((resolve, reject) => {
     const path = `/fifa/worldcup/v1/matches/2026-${String(matchNo).padStart(3,'0')}`;
-    const options = {
-      hostname: BASE,
-      path,
-      headers: { 'X-API-Key': KEY }
-    };
+    const options = { hostname: BASE, path, headers: { 'X-API-Key': KEY } };
     https.get(options, res => {
       let data = '';
       res.on('data', chunk => data += chunk);
@@ -40,19 +35,22 @@ function fetchMatch(matchNo) {
 
 function formatGoals(goals) {
   if (!goals || goals.length === 0) return '[]';
-  return '[\n' + goals.map(g => {
-    const cleanScorer = g.scorer.replace(/\s+\d+['+'].*$/, '').trim();
-    return `    {minute:${g.minute},added:${g.addedMinute||0},scorer:"${cleanScorer}",team:"${g.team}",type:${g.type?`"${g.type}"`:null}}`;
-  }).join(',\n') + '\n  ]';
+  const items = goals.map(g => {
+    const cleanScorer = g.scorer.replace(/\s+\d+['+].*$/, '').trim();
+    const type = g.type ? `"${g.type}"` : null;
+    return `{minute:${g.minute},added:${g.addedMinute||0},scorer:"${cleanScorer}",team:"${g.team}",type:${type}}`;
+  });
+  return `[${items.join(',')}]`;
 }
 
 async function main() {
   const now = new Date();
-  
-  // Find matches currently in window (started within last 140 min)
+  console.log('Current time UTC:', now.toISOString());
+
+  // Find matches in window: from 5min before kickoff to 145min after
   const activeMatches = KO_MATCHES.filter(m => {
-    const elapsed = (now - m.start) / 60000; // minutes
-    return elapsed >= -5 && elapsed <= 145; // -5min before kickoff to +145min after
+    const elapsed = (now - m.start) / 60000;
+    return elapsed >= -5 && elapsed <= 145;
   });
 
   if (activeMatches.length === 0) {
@@ -62,50 +60,43 @@ async function main() {
 
   console.log(`Active matches: ${activeMatches.map(m => m.id).join(', ')}`);
 
-  // Read current scores.js
   let code = fs.readFileSync('api/scores.js', 'utf8');
   let updated = false;
 
   for (const match of activeMatches) {
     try {
-      console.log(`Fetching ${match.id} (matchNo ${match.matchNo})...`);
+      console.log(`Fetching ${match.id}...`);
       const data = await fetchMatch(match.matchNo);
-      
+
       if (!data.goals) {
-        console.log(`${match.id}: no goals data yet`);
+        console.log(`${match.id}: no goals field in response`);
         continue;
       }
 
-      console.log(`${match.id}: ${data.goals.length} goals, status: ${data.status}`);
+      console.log(`${match.id}: status=${data.status}, goals=${data.goals.length}`);
 
-      const newGoalsStr = `'${match.id}':${formatGoals(data.goals)}`;
-      
-      // Check if entry already exists in GOALS_DATA
+      const goalsStr = formatGoals(data.goals);
+      const entryStr = `'${match.id}':${goalsStr}`;
+
+      // Try to replace existing entry
       const existingRegex = new RegExp(`'${match.id}':\\[.*?\\]`, 's');
-      
       if (existingRegex.test(code)) {
-        // Update existing entry
-        const newCode = code.replace(existingRegex, newGoalsStr);
+        const newCode = code.replace(existingRegex, entryStr);
         if (newCode !== code) {
           code = newCode;
           updated = true;
-          console.log(`${match.id}: updated`);
+          console.log(`${match.id}: updated existing entry`);
         } else {
-          console.log(`${match.id}: no change`);
+          console.log(`${match.id}: no change needed`);
         }
       } else {
-        // Add new entry before closing }; of GOALS_DATA
+        // Insert before closing }; of GOALS_DATA
         code = code.replace(
-          /(\s*\/\/ QF[\s\S]*?'M96':\[\].*?,?\n)(};)/,
-          `$1  ${newGoalsStr},\n$2`
-        );
-        // More robust: find GOALS_DATA closing and insert before
-        code = code.replace(
-          /(  'M96':\[\].*?\n)(};)/,
-          `$1  ${newGoalsStr},\n$2`
+          /(const GOALS_DATA = \{[\s\S]*?)(^\};)/m,
+          `$1  ${entryStr},\n$2`
         );
         updated = true;
-        console.log(`${match.id}: added`);
+        console.log(`${match.id}: inserted new entry`);
       }
 
     } catch(e) {
@@ -115,7 +106,7 @@ async function main() {
 
   if (updated) {
     fs.writeFileSync('api/scores.js', code);
-    console.log('scores.js updated!');
+    console.log('scores.js updated successfully!');
   } else {
     console.log('No changes needed.');
   }
