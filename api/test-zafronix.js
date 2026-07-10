@@ -4,24 +4,19 @@ const BASE = 'https://api.zafronix.com/fifa/worldcup/v1';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  const matchNos = [93,94,95,96];
-  const results = {};
-  for (const no of matchNos) {
-    try {
-      const r = await fetch(`${BASE}/matches/2026-${String(no).padStart(3,'0')}`, {
-        headers: { 'X-API-Key': KEY }
-      });
-      const d = await r.json();
-      if (d.goals) {
-        results[`M${no}`] = d.goals.map(g => ({
-          minute: g.minute,
-          added: g.addedMinute || 0,
-          scorer: g.scorer,
-          team: g.team,
-          type: g.type || null
-        }));
-      }
-    } catch(e) {}
+  const matchNo = parseInt(req.query.m || '97');
+  try {
+    const r = await fetch(`${BASE}/matches/2026-${String(matchNo).padStart(3,'0')}`, {
+      headers: { 'X-API-Key': KEY }
+    });
+    const d = await r.json();
+    return res.status(200).json({
+      status: d.status,
+      goals: d.goals,
+      liveMinute: d.liveMinute,
+      livePhase: d.livePhase,
+    });
+  } catch(e) {
+    return res.status(500).json({ error: e.message });
   }
-  return res.status(200).json(results);
 }
