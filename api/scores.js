@@ -105,8 +105,8 @@ const KO_TREE = {
   'M98':['Spain','Belgium'],
   'M100':['Argentina','Switzerland'],
   // SF — resolved from QF
-  'M101':['W97','W99'],
-  'M102':['W98','W100'],
+  'M101':['W97','W98'],
+  'M102':['W99','W100'],
   // 3rd & Final
   'M103':['L101','L102'],
   'M104':['W101','W102'],
