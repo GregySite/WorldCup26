@@ -232,6 +232,7 @@ const GOALS_DATA = {
   'M95':[{minute:15,added:0,scorer:"Y. Ibrahim",team:"away",type:null},{minute:67,added:0,scorer:"Ziko",team:"away",type:null},{minute:79,added:0,scorer:"Romero",team:"home",type:null},{minute:83,added:0,scorer:"Messi",team:"home",type:null},{minute:90,added:3,scorer:"Fernández",team:"home",type:null}],
   'M96':[], // 0-0 après 120min, Switzerland gagne aux pens 4-3
   'M97':[{minute:60,added:0,scorer:"Mbappé",team:"home",type:null},{minute:66,added:0,scorer:"Dembélé",team:"home",type:null}],
+  'M98':[{minute:30,added:0,scorer:"Fabián Ruiz",team:"home",type:null},{minute:41,added:0,scorer:"De Ketelaere",team:"away",type:null},{minute:88,added:0,scorer:"Merino",team:"home",type:null}],
 };
 
 
