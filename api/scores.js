@@ -235,6 +235,7 @@ const GOALS_DATA = {
   'M98':[{minute:30,added:0,scorer:"Fabián Ruiz",team:"home",type:null},{minute:41,added:0,scorer:"De Ketelaere",team:"away",type:null},{minute:88,added:0,scorer:"Merino",team:"home",type:null}],
   'M99':[{minute:36,added:0,scorer:"Schjelderup",team:"home",type:null},{minute:45,added:2,scorer:"Bellingham",team:"away",type:null},{minute:93,added:0,scorer:"Bellingham",team:"away",type:null}],
   'M100':[{minute:10,added:0,scorer:"Mac Allister",team:"home",type:null},{minute:67,added:0,scorer:"Ndoye",team:"away",type:null},{minute:112,added:0,scorer:"J. Álvarez",team:"home",type:null},{minute:120,added:1,scorer:"L. Martínez",team:"home",type:null}],
+'M101':[{minute:22,added:0,scorer:"Oyarzabal",team:"away",type:"penalty"},{minute:58,added:0,scorer:"Porro",team:"away",type:null}],
 };
 
 
