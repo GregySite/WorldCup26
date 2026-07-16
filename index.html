@@ -313,8 +313,7 @@ const KO_MATCHES=[
 ];
 const PO=2;
 function lt(ph,pm=0){
-  const d=pd('01/01',ph,pm);
-  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  return String(ph).padStart(2,'0')+':'+String(pm).padStart(2,'0');
 }
 function pd(d,ph,pm=0){
   const[day,mo]=d.split('/').map(Number);
