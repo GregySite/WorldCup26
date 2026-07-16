@@ -849,7 +849,7 @@ function RK(){
     ]},
     {title:'🏆 Final',matches:[
       {h:'W101',a:'W102',date:'Jul 19',time:'22:00',label:'M104'},
-      {h:'L101',a:'L102',date:'Jul 19',time:'00:00',label:'M103'},
+      {h:'L101',a:'L102',date:'Jul 18',time:'00:00',label:'M103'},
     ]},
   ];
   laterRounds.forEach(round=>{
@@ -859,9 +859,11 @@ function RK(){
       const ko=KO_MATCHES.find(x=>x.label===m.label);
       const h=ko?(resolveTeam(ko.h)||ko.h):resolveKO(m.h);
       const a=ko?(resolveTeam(ko.a)||ko.a):resolveKO(m.a);
+      const time=ko?lt(ko.ph,ko.pm||0):m.time;
+      const date=ko?ko.date:m.date;
       const div=document.createElement('div');
       div.setAttribute('data-label',m.label);
-      div.innerHTML=mkM(h,a,m.date,m.label,m.time,m.label,ko?.city||'');
+      div.innerHTML=mkM(h,a,date,m.label,time,m.label,ko?.city||'');
       col.appendChild(div);
     });
     c.appendChild(col);
