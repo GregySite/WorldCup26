@@ -71,9 +71,8 @@ const LOOKUP = (() => {
   return map;
 })();
 
-// KO bracket tree — W/L labels resolved dynamically from scores
+// KO bracket tree
 const KO_TREE = {
-  // R32 — real teams
   'M73':['South Africa','Canada'],
   'M74':['Germany','Paraguay'],
   'M75':['Netherlands','Morocco'],
@@ -90,7 +89,6 @@ const KO_TREE = {
   'M86':['Argentina','Cape Verde'],
   'M87':['Colombia','Ghana'],
   'M88':['Australia','Egypt'],
-  // R16 — resolved from R32
   'M89':['W74','W77'],
   'M90':['W73','W75'],
   'M91':['W76','W78'],
@@ -99,20 +97,16 @@ const KO_TREE = {
   'M94':['W81','W82'],
   'M95':['W86','W88'],
   'M96':['W85','W87'],
-  // QF — real teams from R16 results
   'M97':['France','Morocco'],
   'M99':['Norway','England'],
   'M98':['Spain','Belgium'],
   'M100':['Argentina','Switzerland'],
-  // SF — real teams from QF results
   'M101':['France','Spain'],
   'M102':['England','Argentina'],
-  // 3rd & Final
-  'M103':['L101','L102'],
-  'M104':['W101','W102'],
+  'M103':['France','England'],  // L101 vs L102
+  'M104':['Spain','Argentina'], // W101 vs W102
 };
 
-// Collected scores to resolve winners
 const collectedScores = {};
 const collectedPens   = {};
 
@@ -160,10 +154,8 @@ function processMatch(m, scores, liveIds, minutes, pens) {
   const hn = mapT(m.homeTeam?.name||'');
   const an = mapT(m.awayTeam?.name||'');
 
-  // 1. Try group stage LOOKUP
   let fm = LOOKUP[`${hn}|||${an}`];
 
-  // 2. Try KO tree — resolve all possible matchups
   if (!fm) {
     for (const matchId of Object.keys(KO_TREE)) {
       const [rh, ra] = resolveTeams(matchId);
@@ -205,7 +197,7 @@ function processMatch(m, scores, liveIds, minutes, pens) {
   }
 }
 
-// ── Hardcoded goals data (from Zafronix, updated as tournament progresses) ──
+// ── Hardcoded goals data ──
 const GOALS_DATA = {
   'M73':[{minute:90,added:2,scorer:"Eustáquio",team:"away",type:null}],
   'M74':[{minute:42,added:0,scorer:"Enciso",team:"away",type:null},{minute:54,added:0,scorer:"Havertz",team:"home",type:null}],
@@ -230,18 +222,18 @@ const GOALS_DATA = {
   'M93':[{minute:90,added:1,scorer:"Merino",team:"away",type:null}],
   'M94':[{minute:9,added:0,scorer:"De Ketelaere",team:"away",type:null},{minute:31,added:0,scorer:"Tillman",team:"home",type:null},{minute:33,added:0,scorer:"De Ketelaere",team:"away",type:null},{minute:57,added:0,scorer:"Vanaken",team:"away",type:null},{minute:90,added:3,scorer:"Lukaku",team:"away",type:null}],
   'M95':[{minute:15,added:0,scorer:"Y. Ibrahim",team:"away",type:null},{minute:67,added:0,scorer:"Ziko",team:"away",type:null},{minute:79,added:0,scorer:"Romero",team:"home",type:null},{minute:83,added:0,scorer:"Messi",team:"home",type:null},{minute:90,added:3,scorer:"Fernández",team:"home",type:null}],
-  'M96':[], // 0-0 après 120min, Switzerland gagne aux pens 4-3
+  'M96':[],
   'M97':[{minute:60,added:0,scorer:"Mbappé",team:"home",type:null},{minute:66,added:0,scorer:"Dembélé",team:"home",type:null}],
   'M98':[{minute:30,added:0,scorer:"Fabián Ruiz",team:"home",type:null},{minute:41,added:0,scorer:"De Ketelaere",team:"away",type:null},{minute:88,added:0,scorer:"Merino",team:"home",type:null}],
   'M99':[{minute:36,added:0,scorer:"Schjelderup",team:"home",type:null},{minute:45,added:2,scorer:"Bellingham",team:"away",type:null},{minute:93,added:0,scorer:"Bellingham",team:"away",type:null}],
   'M100':[{minute:10,added:0,scorer:"Mac Allister",team:"home",type:null},{minute:67,added:0,scorer:"Ndoye",team:"away",type:null},{minute:112,added:0,scorer:"J. Álvarez",team:"home",type:null},{minute:120,added:1,scorer:"L. Martínez",team:"home",type:null}],
-'M101':[{minute:22,added:0,scorer:"Oyarzabal",team:"away",type:"penalty"},{minute:58,added:0,scorer:"Porro",team:"away",type:null}],
+  'M101':[{minute:22,added:0,scorer:"Oyarzabal",team:"away",type:"penalty"},{minute:58,added:0,scorer:"Porro",team:"away",type:null}],
+  'M102':[{minute:55,added:0,scorer:"Gordon",team:"home",type:null},{minute:85,added:0,scorer:"Fernández",team:"away",type:null},{minute:92,added:0,scorer:"L. Martínez",team:"away",type:null}],
 };
 
-
-// ── Hardcoded penalty shootout overrides (football-data sometimes returns wrong values) ──
+// ── Penalty shootout overrides ──
 const PENS_OVERRIDE = {
-  'M96': [4, 3], // Switzerland 4-3 Colombia (football-data returns 3-3 incorrectly)
+  'M96': [4, 3],
 };
 
 export default async function handler(req, res) {
@@ -264,10 +256,7 @@ export default async function handler(req, res) {
       penalties: s.penalties ?? 0,
     }));
 
-    // Apply penalty shootout overrides
     Object.assign(pens, PENS_OVERRIDE);
-
-    // Goals are hardcoded in GOALS_DATA — no API call needed
     const goals = GOALS_DATA;
 
     return res.status(200).json({
