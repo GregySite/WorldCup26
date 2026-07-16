@@ -860,10 +860,11 @@ function RK(){
       const h=ko?(resolveTeam(ko.h)||ko.h):resolveKO(m.h);
       const a=ko?(resolveTeam(ko.a)||ko.a):resolveKO(m.a);
       const time=ko?lt(ko.ph,ko.pm||0):m.time;
-      const date=ko?ko.date:m.date;
+      // Use local date (same as Schedule uses)
+      const localDate=ko?(()=>{const d=pd(ko.date,ko.ph,ko.pm||0);return d.toLocaleDateString('en-GB').split('/').slice(0,2).join('/')})():m.date;
       const div=document.createElement('div');
       div.setAttribute('data-label',m.label);
-      div.innerHTML=mkM(h,a,date,m.label,time,m.label,ko?.city||'');
+      div.innerHTML=mkM(h,a,localDate,m.label,time,m.label,ko?.city||'');
       col.appendChild(div);
     });
     c.appendChild(col);
