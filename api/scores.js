@@ -87,8 +87,8 @@ const KO_TREE = {
   'M103':['France','England'],       'M104':['Spain','Argentina'],
 };
 
-// Matches to completely ignore until they actually start
-const SCORE_BLACKLIST = new Set(['M104']);
+// No more blacklisted matches
+const SCORE_BLACKLIST = new Set([]);
 
 const collectedScores = {};
 const collectedPens   = {};
