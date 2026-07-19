@@ -214,6 +214,7 @@ const GOALS_DATA = {
   'M101':[{minute:22,added:0,scorer:"Oyarzabal",team:"away",type:"penalty"},{minute:58,added:0,scorer:"Porro",team:"away",type:null}],
   'M102':[{minute:55,added:0,scorer:"Gordon",team:"home",type:null},{minute:85,added:0,scorer:"Fernández",team:"away",type:null},{minute:92,added:0,scorer:"L. Martínez",team:"away",type:null}],
   'M103':[{minute:3,added:0,scorer:"Rice",team:"away",type:null},{minute:18,added:0,scorer:"Konsa",team:"away",type:null},{minute:37,added:0,scorer:"Saka",team:"away",type:null},{minute:45,added:1,scorer:"Saka",team:"away",type:null},{minute:48,added:0,scorer:"Mbappé",team:"home",type:null},{minute:54,added:0,scorer:"Barcola",team:"home",type:null},{minute:66,added:0,scorer:"Mbappé",team:"home",type:null},{minute:87,added:0,scorer:"Saka",team:"away",type:"penalty"},{minute:90,added:6,scorer:"Dembélé",team:"home",type:null},{minute:90,added:8,scorer:"Bellingham",team:"away",type:null}],
+  'M104':[{minute:106,added:0,scorer:"F. Torres",team:"home",type:null}],
 };
 
 const PENS_OVERRIDE = {
