@@ -1,6 +1,4 @@
 // Vercel Serverless Function — World Cup 2026
-// Fully dynamic KO bracket resolution
-
 const KEY  = process.env.FOOTBALLDATA_KEY;
 const BASE = 'https://api.football-data.org/v4';
 
@@ -21,7 +19,6 @@ async function get(path) {
   return r.json();
 }
 
-// Group stage LOOKUP
 const LOOKUP = (() => {
   const raw = [
     ['A','Mexico','South Africa'],        ['A','South Korea','Czech Republic'],
@@ -71,40 +68,29 @@ const LOOKUP = (() => {
   return map;
 })();
 
-// KO bracket tree
 const KO_TREE = {
-  'M73':['South Africa','Canada'],
-  'M74':['Germany','Paraguay'],
-  'M75':['Netherlands','Morocco'],
-  'M76':['Brazil','Japan'],
-  'M77':['France','Sweden'],
-  'M78':['Ivory Coast','Norway'],
-  'M79':['Mexico','Ecuador'],
-  'M80':['England','DR Congo'],
-  'M81':['USA','Bosnia-Herzegovina'],
-  'M82':['Belgium','Senegal'],
-  'M83':['Portugal','Croatia'],
-  'M84':['Spain','Austria'],
-  'M85':['Switzerland','Algeria'],
-  'M86':['Argentina','Cape Verde'],
-  'M87':['Colombia','Ghana'],
-  'M88':['Australia','Egypt'],
-  'M89':['W74','W77'],
-  'M90':['W73','W75'],
-  'M91':['W76','W78'],
-  'M92':['W79','W80'],
-  'M93':['W83','W84'],
-  'M94':['W81','W82'],
-  'M95':['W86','W88'],
-  'M96':['W85','W87'],
-  'M97':['France','Morocco'],
-  'M99':['Norway','England'],
-  'M98':['Spain','Belgium'],
-  'M100':['Argentina','Switzerland'],
-  'M101':['France','Spain'],
-  'M102':['England','Argentina'],
-  'M103':['France','England'],  // L101 vs L102
-  'M104':['Spain','Argentina'], // W101 vs W102
+  'M73':['South Africa','Canada'],   'M74':['Germany','Paraguay'],
+  'M75':['Netherlands','Morocco'],   'M76':['Brazil','Japan'],
+  'M77':['France','Sweden'],         'M78':['Ivory Coast','Norway'],
+  'M79':['Mexico','Ecuador'],        'M80':['England','DR Congo'],
+  'M81':['USA','Bosnia-Herzegovina'],'M82':['Belgium','Senegal'],
+  'M83':['Portugal','Croatia'],      'M84':['Spain','Austria'],
+  'M85':['Switzerland','Algeria'],   'M86':['Argentina','Cape Verde'],
+  'M87':['Colombia','Ghana'],        'M88':['Australia','Egypt'],
+  'M89':['W74','W77'], 'M90':['W73','W75'],
+  'M91':['W76','W78'], 'M92':['W79','W80'],
+  'M93':['W83','W84'], 'M94':['W81','W82'],
+  'M95':['W86','W88'], 'M96':['W85','W87'],
+  'M97':['France','Morocco'],        'M99':['Norway','England'],
+  'M98':['Spain','Belgium'],         'M100':['Argentina','Switzerland'],
+  'M101':['France','Spain'],         'M102':['England','Argentina'],
+  'M103':['France','England'],       'M104':['Spain','Argentina'],
+};
+
+// Kickoff times UTC — used to block scores before match starts
+const KO_KICKOFFS = {
+  'M103': new Date('2026-07-18T21:00:00Z'),
+  'M104': new Date('2026-07-19T19:00:00Z'),
 };
 
 const collectedScores = {};
@@ -141,9 +127,7 @@ function resolveTeams(matchId, depth=0) {
   const tree = KO_TREE[matchId];
   if (!tree) return [null, null];
   return tree.map(t => (t.startsWith('W') || t.startsWith('L'))
-    ? resolveLabel(t, depth+1)
-    : t
-  );
+    ? resolveLabel(t, depth+1) : t);
 }
 
 function processMatch(m, scores, liveIds, minutes, pens) {
@@ -155,7 +139,6 @@ function processMatch(m, scores, liveIds, minutes, pens) {
   const an = mapT(m.awayTeam?.name||'');
 
   let fm = LOOKUP[`${hn}|||${an}`];
-
   if (!fm) {
     for (const matchId of Object.keys(KO_TREE)) {
       const [rh, ra] = resolveTeams(matchId);
@@ -164,8 +147,14 @@ function processMatch(m, scores, liveIds, minutes, pens) {
       if (ra===hn && rh===an) { fm = {id:matchId, hi:false}; break; }
     }
   }
-
   if (!fm) { console.warn('NOMATCH:', hn, 'vs', an); return; }
+
+  // Block matches that haven't started yet according to our schedule
+  const kickoff = KO_KICKOFFS[fm.id];
+  if (kickoff && new Date() < kickoff) {
+    console.log(`Blocking ${fm.id} — not started yet`);
+    return;
+  }
 
   const isKO = fm.id.startsWith('M') && !fm.id.match(/^[A-L]-/);
   let home = isKO
@@ -197,7 +186,6 @@ function processMatch(m, scores, liveIds, minutes, pens) {
   }
 }
 
-// ── Hardcoded goals data ──
 const GOALS_DATA = {
   'M73':[{minute:90,added:2,scorer:"Eustáquio",team:"away",type:null}],
   'M74':[{minute:42,added:0,scorer:"Enciso",team:"away",type:null},{minute:54,added:0,scorer:"Havertz",team:"home",type:null}],
@@ -231,7 +219,6 @@ const GOALS_DATA = {
   'M102':[{minute:55,added:0,scorer:"Gordon",team:"home",type:null},{minute:85,added:0,scorer:"Fernández",team:"away",type:null},{minute:92,added:0,scorer:"L. Martínez",team:"away",type:null}],
 };
 
-// ── Penalty shootout overrides ──
 const PENS_OVERRIDE = {
   'M96': [4, 3],
 };
@@ -240,35 +227,29 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 's-maxage=25, stale-while-revalidate=30');
   if (!KEY) return res.status(500).json({error:'FOOTBALLDATA_KEY not set'});
-
   try {
     const scores={}, liveIds=[], minutes={}, pens={};
-
     const d1 = await get('/competitions/WC/matches');
     for (const m of d1.matches||[]) processMatch(m, scores, liveIds, minutes, pens);
-
     const sd = await get('/competitions/WC/scorers?limit=20');
     const scorers = (sd.scorers||[]).map(s => ({
-      name:      s.player?.name || '?',
-      team:      mapT(s.team?.name || ''),
-      goals:     s.goals ?? 0,
-      assists:   s.assists ?? 0,
+      name: s.player?.name || '?',
+      team: mapT(s.team?.name || ''),
+      goals: s.goals ?? 0,
+      assists: s.assists ?? 0,
       penalties: s.penalties ?? 0,
     }));
-
     Object.assign(pens, PENS_OVERRIDE);
     const goals = GOALS_DATA;
-
     return res.status(200).json({
       updated: new Date().toISOString(),
       matches: scores,
-      live:    liveIds,
+      live: liveIds,
       minutes,
       pens,
       goals,
       scorers,
     });
-
   } catch(e) {
     console.error(e);
     return res.status(502).json({error:e.message});
