@@ -87,11 +87,9 @@ const KO_TREE = {
   'M103':['France','England'],       'M104':['Spain','Argentina'],
 };
 
-// Kickoff times UTC — used to block scores before match starts
-const KO_KICKOFFS = {
-  'M103': new Date('2026-07-18T21:00:00Z'),
-  'M104': new Date('2026-07-19T19:00:00Z'),
-};
+// Matches to completely ignore until they actually start
+// football-data sometimes returns wrong scores in advance
+const SCORE_BLACKLIST = new Set(['M103','M104']);
 
 const collectedScores = {};
 const collectedPens   = {};
@@ -149,10 +147,9 @@ function processMatch(m, scores, liveIds, minutes, pens) {
   }
   if (!fm) { console.warn('NOMATCH:', hn, 'vs', an); return; }
 
-  // Block matches that haven't started yet according to our schedule
-  const kickoff = KO_KICKOFFS[fm.id];
-  if (kickoff && new Date() < kickoff) {
-    console.log(`Blocking ${fm.id} — not started yet`);
+  // Block blacklisted matches completely
+  if (SCORE_BLACKLIST.has(fm.id)) {
+    console.log(`Blocking ${fm.id} — in blacklist`);
     return;
   }
 
