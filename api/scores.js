@@ -221,6 +221,11 @@ const PENS_OVERRIDE = {
   'M96': [4, 3],
 };
 
+// Hard-coded score overrides for matches where API returns wrong/missing scores
+const SCORES_OVERRIDE = {
+  'M104': [1, 0], // Spain 1-0 Argentina AET
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 's-maxage=25, stale-while-revalidate=30');
@@ -238,6 +243,7 @@ export default async function handler(req, res) {
       penalties: s.penalties ?? 0,
     }));
     Object.assign(pens, PENS_OVERRIDE);
+    Object.assign(scores, SCORES_OVERRIDE);
     const goals = GOALS_DATA;
     return res.status(200).json({
       updated: new Date().toISOString(),
