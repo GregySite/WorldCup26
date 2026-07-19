@@ -88,8 +88,7 @@ const KO_TREE = {
 };
 
 // Matches to completely ignore until they actually start
-// football-data sometimes returns wrong scores in advance
-const SCORE_BLACKLIST = new Set(['M103','M104']);
+const SCORE_BLACKLIST = new Set(['M104']);
 
 const collectedScores = {};
 const collectedPens   = {};
